@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="drop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- App Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  
+  <!-- Outer Glow Ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#38bdf8" stroke-width="6" opacity="0.4"/>
+  
+  <!-- Water Droplet RO Symbol -->
+  <path d="M256 80 C230 180 150 250 150 330 A106 106 0 0 0 362 330 C362 250 282 180 256 80 Z" fill="url(#drop)"/>
+  
+  <!-- Inner Water Ripple / Plant Wave -->
+  <path d="M190 350 Q225 320 256 350 T322 350" fill="none" stroke="#0284c7" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="256" cy="280" r="14" fill="#0284c7"/>
+  
+  <!-- Text NAE -->
+  <text x="256" y="440" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="4">ASHIQUE RO</text>
+</svg>

@@ -1,0 +1,6 @@
+{
+  "name": "New Ashique Enterprise - RO Price & Management System",
+  "description": "Wholesale and retail price management, profit calculator, product database, and wholesale PDF catalog generator for New Ashique Enterprise RO Water Plants & Accessories in Kaliachak, Malda.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
