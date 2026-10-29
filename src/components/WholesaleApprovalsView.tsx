@@ -67,6 +67,8 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
   const [newCustNotes, setNewCustNotes] = useState('');
   const [addError, setAddError] = useState('');
 
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+
   const handleApprove = (req: WholesaleRequest) => {
     approveWholesaleRequest(req.id);
     onApproveWholesale();
@@ -83,12 +85,14 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
     onRefreshRequests();
   };
 
-  const handleDeleteCustomer = (id: string, name: string) => {
-    const confirmText = language === 'bn' 
-      ? `আপনি কি নিশ্চিত যে "${name}"-কে তালিকা থেকে মুছে ফেলতে চান?` 
-      : `Are you sure you want to remove "${name}" from the wholesale registry?`;
-    if (window.confirm(confirmText)) {
-      deleteWholesaleCustomer(id);
+  const handleDeleteCustomerPrompt = (id: string, name: string) => {
+    setConfirmDelete({ id, name });
+  };
+
+  const handleConfirmDeleteExecute = () => {
+    if (confirmDelete) {
+      deleteWholesaleCustomer(confirmDelete.id);
+      setConfirmDelete(null);
       onRefreshRequests();
     }
   };
@@ -499,7 +503,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
 
                     {/* 5. Delete Customer */}
                     <button
-                      onClick={() => handleDeleteCustomer(req.id, req.customerName)}
+                      onClick={() => handleDeleteCustomerPrompt(req.id, req.customerName)}
                       className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                       title="Delete customer permanently"
                     >
@@ -616,6 +620,48 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 p-5 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 mx-auto flex items-center justify-center">
+              <Trash2 className="w-6 h-6 text-rose-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900">
+                {language === 'bn' ? 'কাস্টমার মুছে ফেলতে চান?' : 'Delete Customer?'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                {language === 'bn' ? (
+                  <>
+                    আপনি কি নিশ্চিত যে <strong>"{confirmDelete.name}"</strong>-কে তালিকা থেকে মুছে ফেলতে চান? মুছে ফেললে তার হোলসেল এক্সেস বন্ধ হয়ে যাবে এবং দেখতে হলে তাকে পুনরায় রিকোয়েস্ট পাঠাতে হবে।
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to permanently delete <strong>"{confirmDelete.name}"</strong>? Their wholesale access will be revoked immediately.
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer"
+              >
+                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleConfirmDeleteExecute}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

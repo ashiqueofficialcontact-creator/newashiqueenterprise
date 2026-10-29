@@ -449,29 +449,8 @@ export function normalizePhone(rawPhone: string): string {
   return digits;
 }
 
-// Sample initial wholesale customers
-export const SAMPLE_WHOLESALE_CUSTOMERS: WholesaleRequest[] = [
-  {
-    id: 'cust-1',
-    customerName: 'আলমগীর ট্রেডার্স (Alamgir Traders)',
-    customerPhone: '9832104521',
-    customerAddress: 'কালিয়াচক চক, মালদা',
-    requestedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    status: 'approved',
-    approvedAt: new Date(Date.now() - 86400000).toISOString(),
-    notes: 'ডিলার / নিয়মিত পাইকারি ক্রেতা',
-  },
-  {
-    id: 'cust-2',
-    customerName: 'রহিম ওয়াটার সলিউশন (Rahim Water Solution)',
-    customerPhone: '9733445566',
-    customerAddress: 'বালিয়াডাঙ্গা, মালদা',
-    requestedAt: new Date(Date.now() - 86400000 * 4).toISOString(),
-    status: 'hidden',
-    approvedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    notes: 'হোলসেল রেট সাময়িকভাবে হাইড করা',
-  },
-];
+// Wholesale customer registry - start clean with real requests only (no mock data)
+export const SAMPLE_WHOLESALE_CUSTOMERS: WholesaleRequest[] = [];
 
 // Current Client Device Customer Identification
 export function loadCurrentCustomerPhone(): string {
@@ -514,17 +493,28 @@ export function loadWholesaleRequests(): WholesaleRequest[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.WHOLESALE_REQUESTS);
     if (!raw) {
-      saveWholesaleRequests(SAMPLE_WHOLESALE_CUSTOMERS);
-      return SAMPLE_WHOLESALE_CUSTOMERS;
+      return [];
     }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      saveWholesaleRequests(SAMPLE_WHOLESALE_CUSTOMERS);
-      return SAMPLE_WHOLESALE_CUSTOMERS;
+    if (!Array.isArray(parsed)) {
+      return [];
     }
-    return parsed;
+    // Filter out old mock dummy records ('cust-1', 'cust-2', or mock names)
+    const cleaned = parsed.filter(
+      (r) =>
+        r &&
+        r.id !== 'cust-1' &&
+        r.id !== 'cust-2' &&
+        !r.customerName?.includes('আলমগীর') &&
+        !r.customerName?.includes('রহিম ওয়াটার')
+    );
+    // If old mock records were stripped, persist the cleaned list
+    if (cleaned.length !== parsed.length) {
+      saveWholesaleRequests(cleaned);
+    }
+    return cleaned;
   } catch {
-    return SAMPLE_WHOLESALE_CUSTOMERS;
+    return [];
   }
 }
 
@@ -667,11 +657,23 @@ export function toggleCustomerWholesaleAccess(idOrPhone: string, newStatus: 'app
   return updated;
 }
 
-// Delete wholesale customer from registry
+// Delete wholesale customer from registry permanently
 export function deleteWholesaleCustomer(id: string): WholesaleRequest[] {
   const list = loadWholesaleRequests();
+  const target = list.find((r) => r.id === id);
   const updated = list.filter((r) => r.id !== id);
   saveWholesaleRequests(updated);
+
+  // If deleted customer is current device's customer, revoke approval
+  if (target) {
+    const currentPhone = loadCurrentCustomerPhone();
+    if (normalizePhone(currentPhone) === normalizePhone(target.customerPhone)) {
+      saveWholesaleApproval(false);
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER_PHONE);
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_CUSTOMER_NAME);
+    }
+  }
+
   return updated;
 }
 
@@ -688,11 +690,19 @@ export function getCustomerWholesaleStatus(phone?: string): WholesaleRequest | n
   const clean = normalizePhone(phone);
   if (!clean) return null;
   const list = loadWholesaleRequests();
-  return list.find(r => normalizePhone(r.customerPhone) === clean) || null;
+  return list.find((r) => normalizePhone(r.customerPhone) === clean) || null;
 }
 
 export function loadWholesaleApproval(): boolean {
   try {
+    // If client device has a registered phone, verify that its status is currently 'approved' in registry
+    const currentPhone = loadCurrentCustomerPhone();
+    if (currentPhone) {
+      const rec = getCustomerWholesaleStatus(currentPhone);
+      if (rec) {
+        return rec.status === 'approved';
+      }
+    }
     return localStorage.getItem(STORAGE_KEYS.WHOLESALE_APPROVED) === 'true';
   } catch {
     return false;

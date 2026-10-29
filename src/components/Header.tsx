@@ -25,7 +25,6 @@ interface HeaderProps {
   onToggleRole: () => void;
   onOpenSettings: () => void;
   onOpenAddProduct?: () => void;
-  onOpenApkModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,7 +35,6 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleRole,
   onOpenSettings,
   onOpenAddProduct,
-  onOpenApkModal,
 }) => {
   const t = translations[language];
   const [copied, setCopied] = useState(false);
@@ -95,17 +93,6 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center space-x-1.5 sm:space-x-2.5">
-          {/* Direct 1-Click APK Download Button */}
-          <a
-            href="/NewAshiqueEnterprise.apk"
-            download="NewAshiqueEnterprise.apk"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-xs cursor-pointer animate-in fade-in"
-            title="Direct 1-Click APK Download"
-          >
-            <Download className="w-3.5 h-3.5 text-white animate-bounce" />
-            <span>{language === 'bn' ? 'এপিকে ডাউনলোড' : 'Download APK'}</span>
-          </a>
-
           {/* Add Product Button (ONLY in Owner Mode in the top corner) */}
           {userRole === 'owner' && onOpenAddProduct && (
             <button

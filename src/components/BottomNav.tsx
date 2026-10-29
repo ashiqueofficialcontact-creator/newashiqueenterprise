@@ -59,9 +59,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <>
-      {/* Bottom Nav Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-        <div className={`max-w-md mx-auto grid ${navGridCols} h-16`}>
+      {/* Bottom Floating Nav Bar (Lifted with ample clearance above Android Back/Home system buttons) */}
+      <div className="fixed bottom-5 sm:bottom-6 left-3 right-3 sm:left-auto sm:right-auto sm:w-[480px] sm:left-1/2 sm:-translate-x-1/2 z-40 pointer-events-auto">
+        <nav className="bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.14)] px-2 transition-all">
+          <div className={`grid ${navGridCols} h-15 sm:h-16 items-center`}>
           {/* 1. Home */}
           <button
             onClick={() => onTabChange('home')}
@@ -150,6 +151,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </button>
         </div>
       </nav>
+      </div>
 
       {/* More Options Drawer Modal (Accessible for additional tools) */}
       {isMoreOpen && (
@@ -198,27 +200,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                   </div>
                 </button>
               )}
-
-              {/* Download Full APK Directly (Available in BOTH Guest & Owner Modes) */}
-              <a
-                href="/NewAshiqueEnterprise.apk"
-                download="NewAshiqueEnterprise.apk"
-                onClick={() => setIsMoreOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md transition text-left cursor-pointer col-span-2"
-              >
-                <div className="p-2.5 bg-emerald-800/60 text-white rounded-xl border border-emerald-400/30">
-                  <Download className="w-6 h-6 text-white animate-bounce" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-black text-xs sm:text-sm flex items-center justify-between">
-                    <span>{language === 'bn' ? 'ডাইরেক্ট এপিকে ডাউনলোড (1-Click APK)' : 'Direct Download Full APK'}</span>
-                    <span className="text-[10px] bg-white/20 font-bold px-2 py-0.5 rounded-full">2.9 MB • Full APK</span>
-                  </div>
-                  <div className="text-[11px] text-emerald-100">
-                    {language === 'bn' ? 'এক ক্লিকেই সরাসরি সম্পূর্ণ এপিকে ফাইল ডাউনলোড ও ফোনে ইনস্টল' : 'Direct full Android APK file download & install'}
-                  </div>
-                </div>
-              </a>
 
               {/* Wholesale Approvals (Owner Only) */}
               {userRole === 'owner' && (

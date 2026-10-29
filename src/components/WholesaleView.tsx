@@ -80,14 +80,16 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
   const [lookupInput, setLookupInput] = useState('');
   const [lookupMessage, setLookupMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Sync customer record when phone changes
+  // Sync customer record when phone changes or approval state changes
   useEffect(() => {
     const current = loadCurrentCustomerPhone();
     setCustomerPhone(current);
     if (current) {
       setCustomerRecord(getCustomerWholesaleStatus(current));
+    } else {
+      setCustomerRecord(null);
     }
-  }, []);
+  }, [isWholesaleApproved]);
 
   const refreshCustomerStatus = () => {
     const current = loadCurrentCustomerPhone();
@@ -212,7 +214,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
 
   // Determine Wholesale Access Status for Customer
   const isOwner = userRole === 'owner';
-  const isCustomerApproved = isOwner || (customerRecord?.status === 'approved') || isWholesaleApproved;
+  const isCustomerApproved = isOwner || (customerRecord !== null && customerRecord.status === 'approved');
   const isCustomerHidden = !isOwner && customerRecord?.status === 'hidden';
   const isCustomerPending = !isOwner && customerRecord?.status === 'pending';
 

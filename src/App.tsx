@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BusinessSettings, 
   Language, 
@@ -34,6 +34,7 @@ import {
   saveCurrentCustomerPhone,
   saveCurrentCustomerName,
   getCustomerWholesaleStatus,
+  addWholesaleRequest,
   normalizePhone
 } from './utils/storage';
 import { Header } from './components/Header';
@@ -53,7 +54,6 @@ import { PinModal } from './components/PinModal';
 import { HelpModal } from './components/HelpModal';
 import { WholesaleApprovalModal } from './components/WholesaleApprovalModal';
 import { WholesaleApprovalsView } from './components/WholesaleApprovalsView';
-import { ApkDownloadModal } from './components/ApkDownloadModal';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -68,9 +68,8 @@ export default function App() {
     return (localStorage.getItem('nae_language_choice_v1') as Language) || settings.defaultLanguage || 'en';
   });
 
-  const [userRole, setUserRole] = useState<UserRole>(() => {
-    return (localStorage.getItem('nae_current_role_v1') as UserRole) || 'owner';
-  });
+  // App must always launch in 'customer' (Guest View) mode by default
+  const [userRole, setUserRole] = useState<UserRole>('customer');
 
   const [currentTab, setCurrentTab] = useState<ViewTab>('home');
 
@@ -84,7 +83,6 @@ export default function App() {
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [approvalModalData, setApprovalModalData] = useState<{
     isOpen: boolean;
     customerName: string;
@@ -144,14 +142,15 @@ export default function App() {
       const reqId = params.get('req_id') || '';
       const wholesaleParam = params.get('wholesale');
 
-      if (reqPhone) {
-        saveCurrentCustomerPhone(reqPhone);
-      }
-      if (reqName) {
-        saveCurrentCustomerName(reqName);
-      }
-
       if (action === 'approve_wholesale') {
+        // Ensure request is registered in the owner's database with customer details
+        if (reqPhone && reqName) {
+          addWholesaleRequest({
+            customerName: reqName,
+            customerPhone: reqPhone,
+          });
+          setWholesaleRequests(loadWholesaleRequests());
+        }
         setApprovalModalData({
           isOpen: true,
           customerName: reqName,
@@ -159,6 +158,12 @@ export default function App() {
           requestId: reqId,
         });
       } else if (wholesaleParam === 'open') {
+        if (reqPhone) {
+          saveCurrentCustomerPhone(reqPhone);
+        }
+        if (reqName) {
+          saveCurrentCustomerName(reqName);
+        }
         setIsWholesaleApproved(true);
         saveWholesaleApproval(true);
         setCurrentTab('wholesale');
@@ -168,6 +173,61 @@ export default function App() {
       console.error('URL parse error:', e);
     }
   }, []);
+
+  // Swipe gesture navigation for horizontal sliding between Wholesale, Retail, and Home
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const target = e.target as HTMLElement;
+    // Don't intercept swipe when user is typing, scrolling an input, or inside a modal
+    if (target.closest('input, textarea, select, [data-no-swipe]')) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    if (activeSubView !== 'none') {
+      touchStartX.current = null;
+      touchStartY.current = null;
+      return;
+    }
+
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // Minimum swipe distance threshold (50px) and must be horizontal gesture
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) {
+      return;
+    }
+
+    const visibleTabs: ViewTab[] =
+      userRole === 'owner'
+        ? ['home', 'wholesale', 'retail', 'products', 'owner-desk']
+        : isWholesaleHidden
+        ? ['home', 'retail']
+        : ['home', 'wholesale', 'retail'];
+
+    const currentIndex = visibleTabs.indexOf(currentTab);
+    if (currentIndex === -1) return;
+
+    if (deltaX < 0) {
+      // Swiped Left (finger moves right to left) -> Advance to next tab
+      if (currentIndex < visibleTabs.length - 1) {
+        setCurrentTab(visibleTabs[currentIndex + 1]);
+      }
+    } else {
+      // Swiped Right (finger moves left to right) -> Go back to previous tab
+      if (currentIndex > 0) {
+        setCurrentTab(visibleTabs[currentIndex - 1]);
+      }
+    }
+  };
 
   // Handle switching roles (polite label: সম্মানিত অতিথি / Guest View)
   const handleToggleRole = () => {
@@ -395,9 +455,6 @@ export default function App() {
       case 'settings':
         setActiveSubView('settings');
         break;
-      case 'apk-download':
-        setIsApkModalOpen(true);
-        break;
       case 'wholesale-approvals':
         setActiveSubView('wholesale-approvals');
         break;
@@ -432,11 +489,14 @@ export default function App() {
           setEditingProduct(null);
           setIsProductModalOpen(true);
         }}
-        onOpenApkModal={() => setIsApkModalOpen(true)}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1">
+      {/* Main Content Area (With smooth horizontal swipe gestures between tabs and elevated clearance) */}
+      <main 
+        className="flex-1 pb-36 sm:pb-40 touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* If a subview from More is active (e.g. Reports or Settings) */}
         {activeSubView === 'reports' ? (
           <div className="pt-2">
@@ -661,14 +721,6 @@ export default function App() {
         onClose={() => setIsHelpOpen(false)}
         language={language}
         settings={settings}
-      />
-
-      {/* APK Download & App Installation Modal */}
-      <ApkDownloadModal
-        isOpen={isApkModalOpen}
-        onClose={() => setIsApkModalOpen(false)}
-        settings={settings}
-        language={language}
       />
 
       {/* Wholesale Approval Modal (Triggered by WhatsApp Link or Owner Click) */}

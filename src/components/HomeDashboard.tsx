@@ -286,22 +286,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Sample Demo Products Alert if present */}
-      {hasDemoProducts && userRole === 'owner' && (
-        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3 text-amber-950 flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" />
-            <span>{language === 'bn' ? 'নমুনা ডেমো ডেটা আছে।' : 'Sample inventory is active.'}</span>
-          </div>
-          <button
-            onClick={onClearDemoData}
-            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow-xs cursor-pointer flex-shrink-0"
-          >
-            {t.clearDemoData}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
