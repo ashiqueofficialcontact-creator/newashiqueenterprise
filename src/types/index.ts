@@ -9,6 +9,10 @@ export interface Product {
   imageUrl?: string;
   unit: string;
   moq: number;
+  wholesaleMoq?: number;
+  distributorMoq?: number;
+  initialAddQty?: number;
+  qtyStep?: number;
   purchasePrice: number;
   wholesalePrice: number;
   retailPrice: number;

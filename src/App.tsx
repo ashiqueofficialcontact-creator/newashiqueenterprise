@@ -201,8 +201,8 @@ export default function App() {
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // Minimum swipe distance threshold (50px) and must be horizontal gesture
-    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) {
+    // Responsive swipe distance threshold (40px) and horizontal dominance check
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15) {
       return;
     }
 
@@ -229,15 +229,24 @@ export default function App() {
     }
   };
 
-  // Handle switching roles (polite label: সম্মানিত অতিথি / Guest View)
+  // Handle switching roles
   const handleToggleRole = () => {
     if (userRole === 'owner') {
       setUserRole('customer');
-      showToast(language === 'bn' ? 'সম্মানিত অতিথি ভিউ চালু হয়েছে।' : 'Switched to Guest View.');
+      setCurrentTab('home');
+      setActiveSubView('none');
+      showToast(language === 'bn' ? 'গেস্ট মোড চালু হয়েছে।' : 'Switched to Guest View.');
     } else {
-      // Switching back to owner mode requires Owner PIN
       setIsPinModalOpen(true);
     }
+  };
+
+  const handlePinSuccess = () => {
+    setUserRole('owner');
+    setIsPinModalOpen(false);
+    setCurrentTab('home');
+    setActiveSubView('none');
+    showToast(language === 'bn' ? 'ওনার মোড আনলক হয়েছে।' : 'Unlocked Owner Mode.');
   };
 
   const handleApproveWholesale = () => {
@@ -275,11 +284,6 @@ export default function App() {
     showToast(language === 'bn' ? 'অনুমোদনের অনুরোধ পাঠানো হয়েছে।' : 'Wholesale access request sent.');
   };
 
-  const handlePinSuccess = () => {
-    setUserRole('owner');
-    setIsPinModalOpen(false);
-    showToast(language === 'bn' ? 'মালিক মোড আনলক হয়েছে।' : 'Unlocked Owner Mode.');
-  };
 
   // Add / Edit Product
   const handleSaveProduct = (
@@ -493,7 +497,7 @@ export default function App() {
 
       {/* Main Content Area (With smooth horizontal swipe gestures between tabs and elevated clearance) */}
       <main 
-        className="flex-1 pb-36 sm:pb-40 touch-pan-y"
+        className="flex-1 pb-44 sm:pb-48 touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >

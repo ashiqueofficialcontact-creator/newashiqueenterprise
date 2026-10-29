@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 @layer base {
+  html, body, #root {
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #1e293b;
@@ -10,6 +16,30 @@
 
   .font-bengali {
     font-family: 'Hind Siliguri', 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* 3D Animated Shop Title */
+.title-3d-text {
+  background: linear-gradient(135deg, #f0f9ff 0%, #7dd3fc 35%, #0284c7 65%, #e0f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 
+    0 1px 0 #0284c7,
+    0 2px 0 #0369a1,
+    0 3px 0 #075985,
+    0 4px 6px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.04em;
+  background-size: 200% auto;
+  animation: shine-3d 5s ease-in-out infinite;
+}
+
+@keyframes shine-3d {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
   }
 }
 

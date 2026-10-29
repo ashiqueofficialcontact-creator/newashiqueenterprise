@@ -77,12 +77,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
             <div>
               <div className="font-extrabold text-xs sm:text-sm">
-                {language === 'bn' ? '🔔 নতুন হোলসেল ভিউ রিকোয়েস্ট এসেছে!' : '🔔 New Wholesale Access Request!'}
+                🔔 New Distributor Access Request!
               </div>
               <div className="text-[11px] text-amber-100">
                 {pendingRequests.length > 0
-                  ? `${pendingRequests[0].customerName} (${pendingRequests[0].customerPhone}) ${language === 'bn' ? 'অনুমতি চেয়েছেন।' : 'requested access.'}`
-                  : (language === 'bn' ? 'একজন গ্রাহক হোলসেল রেট দেখার অনুরোধ পাঠিয়েছেন।' : 'A visitor has requested permission to view wholesale rates.')}
+                  ? `${pendingRequests[0].customerName} (${pendingRequests[0].customerPhone}) requested access.`
+                  : 'A visitor has requested permission to view distributor rates.'}
               </div>
             </div>
           </div>
@@ -103,7 +103,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-black hover:bg-slate-100 shadow-md cursor-pointer transition flex items-center gap-1"
             >
               <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{language === 'bn' ? '✔️ অনুমোদন করুন (Approve)' : '✔️ Approve'}</span>
+              <span>Approve</span>
             </button>
           </div>
         </div>
@@ -124,10 +124,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 </div>
                 <div>
                   <span className="font-black text-rose-900 block sm:inline">
-                    {language === 'bn' ? 'হোলসেল বর্তমানে হাইড (লুকানো) আছে' : 'Wholesale is currently HIDDEN'}
+                    Distributor section is currently HIDDEN
                   </span>
                   <span className="text-[11px] text-rose-700 sm:ml-1">
-                    {language === 'bn' ? '— সাধারণ কাস্টমারদের ড্যাশবোর্ডে এটি দেখা যাচ্ছে না।' : '— Hidden from visitor dashboard.'}
+                    — Hidden from visitor dashboard.
                   </span>
                 </div>
               </>
@@ -138,10 +138,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 </div>
                 <div>
                   <span className="font-black text-emerald-900 block sm:inline">
-                    {language === 'bn' ? 'হোলসেল বর্তমানে ড্যাশবোর্ডে দৃশ্যমান' : 'Wholesale is currently VISIBLE on Dashboard'}
+                    Distributor section is currently VISIBLE
                   </span>
                   <span className="text-[11px] text-emerald-700 sm:ml-1">
-                    {language === 'bn' ? '— কাস্টমাররা ড্যাশবোর্ডে এটি দেখতে পাচ্ছে।' : '— Visible on visitors dashboard.'}
+                    — Visible on visitor dashboard.
                   </span>
                 </div>
               </>
@@ -159,24 +159,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             {isWholesaleHidden ? (
               <>
                 <Eye className="w-3.5 h-3.5" />
-                <span>{language === 'bn' ? 'হোলসেল আনহাইড করুন (দেখান)' : 'Unhide Wholesale'}</span>
+                <span>Unhide Distributor</span>
               </>
             ) : (
               <>
                 <EyeOff className="w-3.5 h-3.5" />
-                <span>{language === 'bn' ? 'হোলসেল হাইড করুন' : 'Hide Wholesale'}</span>
+                <span>Hide Distributor</span>
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* DASHBOARD CARDS:
-          - If Wholesale is visible: 2-column grid side-by-side
-          - If Wholesale is hidden: 1-column single prominent card (Retail only for visitors)
-      */}
+      {/* DASHBOARD CARDS */}
       <div className={`grid gap-2.5 sm:gap-4 ${showWholesaleCard ? 'grid-cols-2' : 'grid-cols-1'}`}>
-        {/* CARD 1: WHOLESALE (Rendered if showWholesaleCard is true) */}
+        {/* CARD 1: DISTRIBUTOR */}
         {showWholesaleCard && (
           <div 
             onClick={() => onNavigate('wholesale')}
@@ -192,37 +189,37 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   <Boxes className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
 
-                {/* Owner-only badge if Wholesale is currently hidden */}
+                {/* Owner-only badge if Distributor is currently hidden */}
                 {userRole === 'owner' && isWholesaleHidden && (
                   <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-black border border-rose-200 flex items-center gap-1">
                     <EyeOff className="w-3 h-3 text-rose-600" />
-                    <span>{language === 'bn' ? 'লুকানো' : 'Hidden'}</span>
+                    <span>Hidden</span>
                   </span>
                 )}
               </div>
 
               <h3 className="text-sm sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
-                {t.wholesaleCardTitle}
+                Distributor
               </h3>
-              <p className="text-[10px] sm:text-xs font-semibold text-blue-700 mt-0.5 font-bengali line-clamp-1">
-                {t.wholesaleCardSub}
+              <p className="text-[10px] sm:text-xs font-semibold text-blue-700 mt-0.5 line-clamp-1">
+                Distributor Rates & Catalog
               </p>
 
               <p className="hidden sm:block text-xs text-slate-500 mt-1.5 leading-relaxed">
-                {t.wholesaleCardDesc}
+                Special bulk trade rates and minimum order quantities for approved dealers.
               </p>
             </div>
 
             <div className="mt-3 pt-2">
               <div className="w-full py-2 sm:py-2.5 px-3 rounded-xl bg-emerald-600 group-hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-700/20 transition-all uppercase tracking-wider">
-                <span>{language === 'bn' ? 'ওপেন (OPEN)' : 'OPEN'}</span>
+                <span>OPEN</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
           </div>
         )}
 
-        {/* CARD 2: RETAIL */}
+        {/* CARD 2: WHOLESALE */}
         <div 
           onClick={() => onNavigate('retail')}
           className={`group relative bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200 border-2 border-emerald-200 cursor-pointer flex flex-col justify-between ${
@@ -235,20 +232,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
 
             <h3 className="text-sm sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
-              {t.retailCardTitle}
+              Wholesale
             </h3>
-            <p className="text-[10px] sm:text-xs font-semibold text-emerald-700 mt-0.5 font-bengali line-clamp-1">
-              {language === 'bn' ? 'খুচরো দর ও ক্যাটালগ' : 'Retail Price Catalog'}
+            <p className="text-[10px] sm:text-xs font-semibold text-emerald-700 mt-0.5 line-clamp-1">
+              Wholesale Price Catalog
             </p>
 
             <p className={`${!showWholesaleCard ? 'block' : 'hidden sm:block'} text-xs text-slate-500 mt-1.5 leading-relaxed`}>
-              {language === 'bn' ? 'দোকানের সকল পানির ফিল্টার ও পার্টসের খুচরো বিক্রয় মূল্য।' : 'View all RO filters and spare parts retail selling prices.'}
+              Open catalog with wholesale rates for all RO purifiers and spare parts.
             </p>
           </div>
 
           <div className="mt-3 pt-2">
             <div className="w-full py-2 sm:py-2.5 px-3 rounded-xl bg-emerald-600 group-hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-700/20 transition-all uppercase tracking-wider">
-              <span>{language === 'bn' ? 'ওপেন (OPEN)' : 'OPEN'}</span>
+              <span>OPEN</span>
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
@@ -260,7 +257,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <div className="grid grid-cols-3 gap-2 text-center divide-x divide-slate-100">
           <div>
             <span className="text-[10px] sm:text-xs text-slate-500 font-semibold block">
-              {language === 'bn' ? 'মোট প্রোডাক্ট' : 'Total Items'}
+              Total Items
             </span>
             <span className="text-base sm:text-xl font-black text-slate-900">
               {totalProducts}
@@ -269,7 +266,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
           <div>
             <span className="text-[10px] sm:text-xs text-slate-500 font-semibold block">
-              {language === 'bn' ? 'চালু আইটেম' : 'Active'}
+              Active Items
             </span>
             <span className="text-base sm:text-xl font-black text-emerald-700">
               {activeProducts}
@@ -278,7 +275,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
           <div>
             <span className="text-[10px] sm:text-xs text-slate-500 font-semibold block">
-              {language === 'bn' ? 'কম স্টক (<৫)' : 'Low Stock'}
+              Low Stock (&lt;5)
             </span>
             <span className="text-base sm:text-xl font-black text-amber-700">
               {lowStockProducts}

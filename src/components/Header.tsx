@@ -7,15 +7,11 @@ import {
   MapPin, 
   Droplet, 
   ShieldCheck, 
-  Sparkles, 
+  Lock,
   Check, 
-  ExternalLink,
-  PlusCircle,
-  Smartphone,
-  Download
+  PlusCircle
 } from 'lucide-react';
 import { BusinessSettings, Language, UserRole } from '../types';
-import { translations } from '../i18n/translations';
 
 interface HeaderProps {
   settings: BusinessSettings;
@@ -30,14 +26,12 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   settings,
   language,
-  onLanguageChange,
   userRole,
   onToggleRole,
-  onOpenSettings,
   onOpenAddProduct,
 }) => {
-  const t = translations[language];
   const [copied, setCopied] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   const handleCopyNumber = () => {
     navigator.clipboard.writeText(settings.phone);
@@ -45,178 +39,194 @@ export const Header: React.FC<HeaderProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleShareApp = async () => {
+  const handleShareShop = async () => {
+    const shareText = 
+      `💧 *${settings.businessName}*\n` +
+      `ISO Quality RO Water Purifier & Commercial Plants\n` +
+      `📍 ${settings.address}\n` +
+      `📞 যোগাযোগ / WhatsApp: ${settings.phone}\n` +
+      `ডিস্ট্রিবিউটর ও হোলসেল RO স্পেয়ার পার্টস সুলভ মূল্যে পাওয়া যায়।`;
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: settings.businessName,
-          text: `${settings.businessName} - ${settings.subtitle}\nWholesale & Retail RO Plants & Accessories.\nCall/WhatsApp: ${settings.phone}\n${settings.address}`,
+          text: shareText,
           url: window.location.href,
         });
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 2000);
       } catch (e) {
-        // user cancelled or failed
+        navigator.clipboard.writeText(shareText);
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 2000);
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      navigator.clipboard.writeText(shareText);
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 2000);
     }
   };
 
   const openWhatsApp = () => {
     const cleanPhone = settings.whatsapp.replace(/\D/g, '');
     const phoneWithCode = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
-    const text = encodeURIComponent(`Hello ${settings.businessName}, I would like to inquire about RO Plants & spare parts.`);
+    const text = encodeURIComponent(`Hello ${settings.businessName}, I would like to inquire about RO Purifier Plants & spare parts.`);
     window.open(`https://wa.me/${phoneWithCode}?text=${text}`, '_blank');
   };
 
-  const openAddress = () => {
+  const openShopLocation = () => {
     if (settings.googleMapsUrl) {
       window.open(settings.googleMapsUrl, '_blank');
     } else {
-      const query = encodeURIComponent(`${settings.businessName}, ${settings.address}`);
+      const query = encodeURIComponent(`New Ashique Enterprise Baliadanga Eid Gaha Market Kaliachak Malda`);
       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
     }
   };
 
   return (
-    <header className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white shadow-lg sticky top-0 z-30">
-      {/* Top utility row */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 border-b border-blue-900/60 flex items-center justify-between text-xs">
-        <div className="flex items-center space-x-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-            <Droplet className="w-3 h-3 mr-1 text-cyan-400 animate-pulse" />
-            ISO Quality Spares & RO Plants
-          </span>
-          <span className="hidden md:inline text-slate-400">|</span>
-          <span className="hidden md:inline text-slate-300">Baliadanga, Kaliachak, Malda</span>
-        </div>
-
-        <div className="flex items-center space-x-1.5 sm:space-x-2.5">
-          {/* Add Product Button (ONLY in Owner Mode in the top corner) */}
-          {userRole === 'owner' && onOpenAddProduct && (
-            <button
-              onClick={onOpenAddProduct}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-xs cursor-pointer animate-in fade-in"
-              title="Add New Product (Owner Only)"
-            >
-              <PlusCircle className="w-3.5 h-3.5 text-cyan-200" />
-              <span>{language === 'bn' ? '+ প্রোডাক্ট' : '+ Add'}</span>
-            </button>
-          )}
-
-          {/* Language Switcher */}
-          <button
-            onClick={() => onLanguageChange(language === 'en' ? 'bn' : 'en')}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-md bg-blue-900/60 hover:bg-blue-800 text-slate-200 border border-blue-700/50 transition font-medium cursor-pointer"
-            title="Switch Language / ভাষা পরিবর্তন করুন"
-          >
-            <span className={language === 'en' ? 'text-cyan-300 font-bold' : 'text-slate-400'}>EN</span>
-            <span className="text-slate-500">|</span>
-            <span className={language === 'bn' ? 'text-cyan-300 font-bold font-bengali' : 'text-slate-400'}>বাংলা</span>
-          </button>
-
-          {/* Role Mode Toggle: Polite label for customer ("সম্মানিত অতিথি" / "Guest View") */}
-          <button
-            onClick={onToggleRole}
-            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer border ${
-              userRole === 'owner'
-                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/50 hover:bg-emerald-900'
-                : 'bg-indigo-950/80 text-cyan-200 border-indigo-600/50 hover:bg-indigo-900'
-            }`}
-            title="Toggle View Mode"
-          >
-            {userRole === 'owner' ? (
-              <>
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{language === 'bn' ? 'ওনার মোড' : 'Owner'}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{language === 'bn' ? 'সম্মানিত অতিথি' : 'Guest View'}</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Main Brand & Actions Header */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3.5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Business Info & Water Drop Logo */}
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-900/40 p-2 flex-shrink-0 border border-cyan-400/30">
-              <div className="relative flex items-center justify-center">
-                <Droplet className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-white/80" />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-blue-900"></span>
-              </div>
+    <header className="bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-white shadow-xl sticky top-0 z-30 border-b border-blue-900/60">
+      <div className="max-w-4xl mx-auto px-4 py-3.5 space-y-2.5">
+        {/* Line 1: Business Brand Title + Single Unified Mode Switcher at Top-Right */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg p-2 flex-shrink-0 border border-cyan-400/50 shadow-cyan-500/20">
+              <Droplet className="w-6 h-6 text-white fill-white" />
             </div>
-
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white uppercase">
-                  {settings.businessName}
-                </h1>
-              </div>
-              <p className="text-xs sm:text-sm font-semibold tracking-wide text-cyan-400">
-                {settings.subtitle}
-              </p>
-              <p className="text-[11px] sm:text-xs text-slate-300 flex items-center gap-1 mt-0.5">
-                <MapPin className="w-3 h-3 text-red-400 flex-shrink-0" />
-                <span>{settings.address}</span>
-              </p>
+            <div className="min-w-0">
+              <h1 className="title-3d-text text-sm sm:text-lg font-black tracking-wider uppercase leading-tight">
+                {settings.businessName}
+              </h1>
             </div>
           </div>
 
-          {/* Quick Action Buttons for Shop */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 md:pt-0">
-            {/* Call button */}
+          {/* Top-Right Single Unified Mode Switcher Button */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {userRole === 'owner' && onOpenAddProduct && (
+              <button
+                onClick={onOpenAddProduct}
+                className="inline-flex items-center gap-1.5 py-2 px-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-md cursor-pointer"
+                title="Add New Product"
+              >
+                <PlusCircle className="w-4 h-4 text-cyan-200" />
+                <span className="hidden sm:inline">+ Product</span>
+              </button>
+            )}
+
+            {/* The ONE and ONLY Mode Switcher Button */}
+            <button
+              onClick={onToggleRole}
+              className={`flex items-center gap-2 py-2 px-3.5 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer shadow-lg border ${
+                userRole === 'owner'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white border-emerald-400 ring-2 ring-emerald-500/30'
+                  : 'bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-cyan-200 border-cyan-400/50'
+              }`}
+              title={userRole === 'owner' ? 'Click to switch to Guest View' : 'Click to unlock Owner Mode'}
+            >
+              {userRole === 'owner' ? (
+                <>
+                  <ShieldCheck className="w-4 h-4 text-emerald-200" />
+                  <span>Owner Mode</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 text-cyan-300" />
+                  <span>Guest View</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Line 2: Tagline */}
+        <div>
+          <p className="text-xs sm:text-sm font-semibold text-cyan-300 tracking-wide font-sans">
+            ISO Quality RO Spare Parts & Commercial Plants
+          </p>
+        </div>
+
+        {/* Line 3: Full Shop Address */}
+        <div className="flex items-center gap-1.5 text-xs text-slate-300">
+          <MapPin className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+          <span className="leading-snug">{settings.address}</span>
+        </div>
+
+        {/* Shop Contact & Action Buttons: ONLY VISIBLE IN GUEST MODE (Hidden in Owner Mode) */}
+        {userRole === 'customer' && (
+          <div className="pt-2 space-y-2 animate-in fade-in duration-200">
+            {/* Row 1: Full-width Call Shop */}
             <a
               href={`tel:${settings.phone}`}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-950/40 transition cursor-pointer"
             >
-              <Phone className="w-3.5 h-3.5" />
-              <span>{t.callShop}</span>
+              <Phone className="w-4 h-4" />
+              <span>Call: {settings.phone}</span>
             </a>
 
-            {/* WhatsApp button */}
-            <button
-              onClick={openWhatsApp}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-semibold text-xs transition shadow-sm cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{t.whatsappShop}</span>
-            </button>
+            {/* Row 2: WhatsApp + Copy Phone */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {/* WhatsApp */}
+              <button
+                onClick={openWhatsApp}
+                className="py-2.5 px-3 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold flex items-center justify-center gap-2 shadow-md shadow-green-950/30 transition cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                <span>WhatsApp</span>
+              </button>
 
-            {/* Copy phone */}
-            <button
-              onClick={handleCopyNumber}
-              className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-              title="Copy Shop Mobile Number"
-            >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-            </button>
+              {/* Copy Phone */}
+              <button
+                onClick={handleCopyNumber}
+                className="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold flex items-center justify-center gap-2 shadow-md shadow-amber-950/30 transition cursor-pointer"
+                title="Copy Mobile Number"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 text-white flex-shrink-0" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-amber-200 flex-shrink-0" />
+                    <span>Copy Phone</span>
+                  </>
+                )}
+              </button>
+            </div>
 
-            {/* Share app */}
-            <button
-              onClick={handleShareApp}
-              className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-              title="Share Shop Details"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
+            {/* Row 3: Share Shop Info + Shop Location */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {/* Share Shop Info */}
+              <button
+                onClick={handleShareShop}
+                className="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white font-extrabold flex items-center justify-center gap-2 shadow-md shadow-purple-950/30 transition cursor-pointer"
+                title="Share Shop Info"
+              >
+                {shareSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                    <span>Shared!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-4 h-4 text-purple-200 flex-shrink-0" />
+                    <span>Share Shop</span>
+                  </>
+                )}
+              </button>
 
-            {/* View Map / Address */}
-            <button
-              onClick={openAddress}
-              className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-              title="View on Google Maps"
-            >
-              <ExternalLink className="w-4 h-4 text-cyan-400" />
-            </button>
+              {/* Shop Location (Google Maps) */}
+              <button
+                onClick={openShopLocation}
+                className="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-rose-700 to-red-800 hover:from-rose-600 hover:to-red-700 text-white font-extrabold flex items-center justify-center gap-2 shadow-md shadow-rose-950/30 transition cursor-pointer"
+                title="Open Shop on Google Maps"
+              >
+                <MapPin className="w-4 h-4 text-rose-200 flex-shrink-0" />
+                <span>Shop Location</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for refining New Ashique Enterprise RO application:\n1. Role Switcher moved to top right header as a prominent badge button.\n2. Smooth, responsive swipe navigation with pull-to-refresh disabled globally.\n3. Elevated floating bottom navigation bar safely above Android system gestures.\n4. Clean divider line between product name and price on all product cards.\n5. Removal of redundant header title overlay above the tagline.\n6. In-app manual refresh buttons for wholesale approvals and catalog sync.\n7. Interactive WhatsApp order builder creating formatted itemized orders with totals.\n8. Instant 4-digit auto-unlock for Owner Mode with direct Home dashboard redirection.\n9. Add Product form improvements (removed category field, zero-free clean numeric inputs).\n10. Streamlined Wholesale Approvals with single-touch \"অ্যাক্টিভ\" / \"ডিঅ্যাক্টিভ\" toggles.\n11. Compact, zero-horizontal-scroll vertical Profit & Loss statement table.\n12. Enhanced Shop Contact & Support bar with Copy Phone, Share Shop Info, and Direct Google Maps link.",
+  "updatedAt":  "2026-10-29T10:40:14.211875327Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

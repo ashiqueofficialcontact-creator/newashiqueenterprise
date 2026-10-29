@@ -26,8 +26,8 @@ export const translations = {
     
     // Bottom Nav Tabs
     tabHome: 'Home',
-    tabWholesale: 'Wholesale',
-    tabRetail: 'Retail',
+    tabWholesale: 'Distributor',
+    tabRetail: 'Wholesale',
     tabProducts: 'Products',
     tabOwnerDesk: 'Owner Desk',
     tabMore: 'More',
@@ -35,15 +35,15 @@ export const translations = {
     ownerDeskSubtitle: 'Purchase costs and live profit calculations (Owner only)',
     
     // Home Screen Cards & Stats
-    wholesaleCardTitle: 'WHOLESALE',
-    wholesaleCardSub: 'Wholesale Price List & MOQs',
-    wholesaleCardDesc: 'View product catalog, minimum order quantities (MOQ), and bulk wholesale rates.',
-    openWholesale: 'OPEN WHOLESALE',
+    wholesaleCardTitle: 'DISTRIBUTOR',
+    wholesaleCardSub: 'Distributor Price List & MOQs',
+    wholesaleCardDesc: 'View product catalog, minimum order quantities (MOQ), and bulk distributor trade rates.',
+    openWholesale: 'OPEN DISTRIBUTOR',
     
-    retailCardTitle: 'RETAIL',
-    retailCardSub: 'Retail Prices & Profit Calculator',
-    retailCardDesc: 'View purchase costs, set retail prices, and calculate profit margins live.',
-    openRetail: 'OPEN RETAIL',
+    retailCardTitle: 'WHOLESALE',
+    retailCardSub: 'Wholesale Prices & Catalog',
+    retailCardDesc: 'View wholesale rates, filter spares, and place quick bulk orders.',
+    openRetail: 'OPEN WHOLESALE',
     
     statTotalProducts: 'Total Products',
     statActiveProducts: 'Active Products',
@@ -58,12 +58,12 @@ export const translations = {
     storageStatusLocal: 'Local Device Storage',
     storageStatusDesc: 'Data is securely stored in this browser. Use Backup & Restore to keep safe copies.',
     
-    // Wholesale Section
-    wholesaleTitle: 'WHOLESALE PRICE LIST',
+    // Distributor Section (Formerly Wholesale)
+    wholesaleTitle: 'DISTRIBUTOR PRICE LIST',
     wholesaleSubtitle: 'Bulk trade rates with Minimum Order Quantity (MOQ)',
     searchPlaceholder: 'Search by product name or code...',
     allCategories: 'All Categories',
-    downloadWholesalePdf: 'Download Wholesale PDF',
+    downloadWholesalePdf: 'Download Distributor PDF',
     shareWholesaleList: 'Share on WhatsApp',
     minOrderQty: 'Min Order',
     pricePerUnit: 'Price / Unit',
@@ -235,8 +235,8 @@ export const translations = {
     
     // Bottom Nav Tabs
     tabHome: 'হোম',
-    tabWholesale: 'হোলসেল',
-    tabRetail: 'রিটেইল',
+    tabWholesale: 'ডিস্ট্রিবিউটর',
+    tabRetail: 'হোলসেল',
     tabProducts: 'প্রোডাক্টস',
     tabOwnerDesk: 'মালিক হিসাব',
     tabMore: 'আরও',
@@ -244,15 +244,15 @@ export const translations = {
     ownerDeskSubtitle: 'কেনা দাম ও মোট লাভের হিসাব (শুধুমাত্র মালিকের জন্য)',
     
     // Home Screen Cards & Stats
-    wholesaleCardTitle: 'হোলসেল',
-    wholesaleCardSub: 'হোলসেল প্রাইস লিস্ট ও MOQ',
-    wholesaleCardDesc: 'সকল প্রোডাক্টের পাইকারি রেট ও সর্বনিম্ন অর্ডারের পরিমাণ (MOQ) দেখুন।',
-    openWholesale: 'হোলসেল লিস্ট খুলুন',
+    wholesaleCardTitle: 'ডিস্ট্রিবিউটর',
+    wholesaleCardSub: 'ডিস্ট্রিবিউটর প্রাইস লিস্ট ও MOQ',
+    wholesaleCardDesc: 'অনুমোদিত ডিলার ও ডিস্ট্রিবিউটরদের জন্য বিশেষ ট্রেড রেট ও সর্বনিম্ন অর্ডার পরিমাণ (MOQ)।',
+    openWholesale: 'ডিস্ট্রিবিউটর ওপেন',
     
-    retailCardTitle: 'রিটেইল',
-    retailCardSub: 'খুচরো দাম ও লাভ ক্যালকুলেটর',
-    retailCardDesc: 'ক্রয় মূল্য, খুচরো বিক্রয় মূল্য এবং প্রোডাক্ট প্রতি লাভের হার হিসাব করুন।',
-    openRetail: 'রিটেইল ক্যালকুলেটর খুলুন',
+    retailCardTitle: 'হোলসেল',
+    retailCardSub: 'হোলসেল দর ও প্রোডাক্ট ক্যাটালগ',
+    retailCardDesc: 'দোকানের সকল পানির ফিল্টার ও পার্টসের পাইকারি বিক্রয় মূল্য ও সরাসরি অর্ডার।',
+    openRetail: 'হোলসেল ওপেন',
     
     statTotalProducts: 'মোট প্রোডাক্ট',
     statActiveProducts: 'চালু প্রোডাক্ট',
@@ -267,12 +267,12 @@ export const translations = {
     storageStatusLocal: 'লোকাল ডিভাইস স্টোরেজ',
     storageStatusDesc: 'ডেটা আপনার ফোনের ব্রাউজারে সুরক্ষিত রয়েছে। ব্যাকআপ নিয়ে ডেটা নিরাপদে সংরক্ষণ করুন।',
     
-    // Wholesale Section
-    wholesaleTitle: 'হোলসেল প্রাইস লিস্ট (পাইকারি রেট)',
-    wholesaleSubtitle: 'সর্বনিম্ন অর্ডার পরিমাণ (MOQ) সহ পাইকারি মূল্য তালিকা',
+    // Distributor Section (Formerly Wholesale)
+    wholesaleTitle: 'ডিস্ট্রিবিউটর প্রাইস লিস্ট (ট্রেড রেট)',
+    wholesaleSubtitle: 'সর্বনিম্ন অর্ডার পরিমাণ (MOQ) সহ স্পেশাল পাইকারি মূল্য তালিকা',
     searchPlaceholder: 'প্রোডাক্টের নাম বা কোড দিয়ে খুঁজুন...',
     allCategories: 'সকল ক্যাটাগরি',
-    downloadWholesalePdf: 'হোলসেল PDF ডাউনলোড',
+    downloadWholesalePdf: 'ডিস্ট্রিবিউটর PDF ডাউনলোড',
     shareWholesaleList: 'হোয়াটসঅ্যাপে পাঠান',
     minOrderQty: 'কমপক্ষে অর্ডার (MOQ)',
     pricePerUnit: 'দর / একক',

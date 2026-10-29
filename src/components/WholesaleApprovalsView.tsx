@@ -192,20 +192,21 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
             </button>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold mb-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'মালিক নিয়ন্ত্রণ ও কাস্টমার রেজিস্ট্রি' : 'Wholesale Customer Registry'}</span>
+              <span>{language === 'bn' ? 'মালিক নিয়ন্ত্রণ ও ডিস্ট্রিবিউটর রেজিস্ট্রি' : 'Distributor Customer Registry'}</span>
             </div>
             <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
-              {language === 'bn' ? 'হোলসেল কাস্টমার কন্ট্রোল ও অনুমোদন' : 'Wholesale Customers & Access Control'}
+              {language === 'bn' ? 'ডিস্ট্রিবিউটর কাস্টমার কন্ট্রোল ও অনুমোদন' : 'Distributor Customers & Access Control'}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               {language === 'bn'
-                ? 'একবার রিকোয়েস্ট করা কাস্টমারদের নাম স্থায়ীভাবে সেভ থাকে। যেকোনো কাস্টমারের জন্য হোলসেল চালু (অন) বা হাইড (অফ) করুন।'
-                : 'Permanent customer directory. Toggle wholesale access ON or OFF for any individual customer anytime.'}
+                ? 'একবার রিকোয়েস্ট করা ডিস্ট্রিবিউটরদের নাম স্থায়ীভাবে সেভ থাকে। যেকোনো ডিলারের জন্য ডিস্ট্রিবিউটর রেট চালু (অন) বা হাইড (অফ) করুন।'
+                : 'Permanent customer directory. Toggle distributor access ON or OFF for any individual customer anytime.'}
             </p>
           </div>
 
           {/* Quick Actions: Global Hide / Unhide & Add Customer */}
           <div className="flex flex-wrap items-center gap-2">
+
             {onToggleWholesaleHidden && (
               <button
                 onClick={onToggleWholesaleHidden}
@@ -273,7 +274,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
             )}
           </div>
 
-          {/* Filter Pills */}
+          {/* Filter Pills with clear Active / Deactive labels */}
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               onClick={() => setFilterTab('all')}
@@ -295,7 +296,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'সক্রিয় / অন' : 'Active / Approved'} ({approvedCount})</span>
+              <span>{language === 'bn' ? 'অ্যাক্টিভ' : 'Active'} ({approvedCount})</span>
             </button>
 
             <button
@@ -307,7 +308,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
               }`}
             >
               <EyeOff className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'হাইড করা / অফ' : 'Hidden / Paused'} ({hiddenCount})</span>
+              <span>{language === 'bn' ? 'ডিঅ্যাক্টিভ' : 'Deactive'} ({hiddenCount})</span>
             </button>
 
             {pendingCount > 0 && (
@@ -320,7 +321,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
-                <span>{language === 'bn' ? 'পেন্ডিং অনুমোদন' : 'Pending'} ({pendingCount})</span>
+                <span>{language === 'bn' ? 'পেন্ডিং' : 'Pending'} ({pendingCount})</span>
               </button>
             )}
           </div>
@@ -371,21 +372,21 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                       {isApproved && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>{language === 'bn' ? 'অন (হোলসেল দেখতে পারবে)' : 'Active (Access Granted)'}</span>
+                          <span>{language === 'bn' ? 'অ্যাক্টিভ' : 'Active'}</span>
                         </span>
                       )}
 
                       {isHidden && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-black border border-rose-300">
                           <EyeOff className="w-3 h-3 text-rose-600" />
-                          <span>{language === 'bn' ? 'অফ (হোলসেল হাইড করা)' : 'Hidden (Access Paused)'}</span>
+                          <span>{language === 'bn' ? 'ডিঅ্যাক্টিভ' : 'Deactive'}</span>
                         </span>
                       )}
 
                       {isPending && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black border border-amber-300">
                           <Clock className="w-3 h-3 text-amber-600" />
-                          <span>{language === 'bn' ? 'অনুমোদনের অপেক্ষায়' : 'Pending Request'}</span>
+                          <span>{language === 'bn' ? 'পেন্ডিং' : 'Pending'}</span>
                         </span>
                       )}
                     </div>
@@ -422,15 +423,15 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
 
                   {/* Customer Action Controls */}
                   <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                    {/* 1. Toggle ON / OFF (Individual Access Control) */}
+                    {/* 1. Toggle Active / Deactive */}
                     {isApproved && (
                       <button
                         onClick={() => handleToggleCustomerAccess(req, 'hidden')}
                         className="py-2 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                        title="Click to hide wholesale prices for this customer"
+                        title="Click to deactivate wholesale access for this customer"
                       >
                         <EyeOff className="w-3.5 h-3.5 text-rose-600" />
-                        <span>{language === 'bn' ? 'হোলসেল হাইড করুন (অফ)' : 'Hide Rates (Turn OFF)'}</span>
+                        <span>{language === 'bn' ? 'ডিঅ্যাক্টিভ করুন' : 'Deactivate'}</span>
                       </button>
                     )}
 
@@ -438,10 +439,10 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                       <button
                         onClick={() => handleToggleCustomerAccess(req, 'approved')}
                         className="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1.5"
-                        title="Click to enable wholesale prices for this customer"
+                        title="Click to activate wholesale access for this customer"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>{language === 'bn' ? 'হোলসেল চালু করুন (অন)' : 'Enable Rates (Turn ON)'}</span>
+                        <span>{language === 'bn' ? 'অ্যাক্টিভ করুন' : 'Activate'}</span>
                       </button>
                     )}
 

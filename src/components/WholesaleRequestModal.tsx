@@ -67,15 +67,15 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
     const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
     
     const message = 
-      `💧 *হোলসেল অনুমোদনের অনুরোধ (NEW ASHIQUE ENTERPRISE)*\n` +
+      `💧 *Wholesale Rate Access Request (NEW ASHIQUE ENTERPRISE)*\n` +
       `------------------------------------------\n` +
-      `👤 *নাম / দোকান:* ${customerName.trim()}\n` +
-      `📞 *মোবাইল:* ${customerPhone.trim()}\n` +
-      (customerAddress.trim() ? `📍 *ঠিকানা / এলাকা:* ${customerAddress.trim()}\n` : '') +
-      `⏰ *সময়:* ${now}\n\n` +
-      `👉 *মালিকের জন্য সরাসরি এক-ক্লিক অনুমোদন লিংক:*\n` +
+      `👤 *Name / Shop:* ${customerName.trim()}\n` +
+      `📞 *Mobile:* ${customerPhone.trim()}\n` +
+      (customerAddress.trim() ? `📍 *Address / Area:* ${customerAddress.trim()}\n` : '') +
+      `⏰ *Time:* ${now}\n\n` +
+      `👉 *Direct One-Click Approval Link for Owner:*\n` +
       `${approvalUrl}\n\n` +
-      `_(এই লিংকে ক্লিক করে ওনার পিন দিয়ে ১ ট্যাপেই হোলসেল অ্যাক্সেস অনুমোদন করতে পারবেন)_`;
+      `_(Click this link and enter your Owner PIN to approve wholesale access in 1 tap)_`;
 
     window.open(`https://wa.me/${shopPhoneWithCode}?text=${encodeURIComponent(message)}`, '_blank');
 
@@ -94,7 +94,7 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-sm sm:text-base">
-                {language === 'bn' ? 'হোলসেল রেট দেখার অনুরোধ' : 'Request Wholesale Access'}
+                Request Wholesale Access
               </h3>
               <p className="text-[11px] text-blue-200">{settings.businessName}</p>
             </div>
@@ -112,15 +112,7 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
           <div className="p-3 bg-blue-50/80 rounded-2xl border border-blue-200/80 text-xs text-blue-900 flex items-start gap-2.5">
             <ShieldCheck className="w-4 h-4 text-blue-700 flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed">
-              {language === 'bn' ? (
-                <>
-                  আপনার নাম ও মোবাইল নম্বর দিয়ে সাবমিট করলেই দোকানের মালিকের হোয়াটসঅ্যাপে (<strong>{settings.phone}</strong>) স্বয়ংক্রিয়ভাবে অনুমোদনের লিংক চলে যাবে। মালিক অনুমোদন করলেই এই ফোনে হোলসেল রেট খুলে যাবে।
-                </>
-              ) : (
-                <>
-                  Submitting this will send an instant one-click approval link to the shop owner on WhatsApp (<strong>{settings.phone}</strong>). Once approved, wholesale rates will unlock immediately.
-                </>
-              )}
+              Submitting this will send an instant one-click approval link to the shop owner on WhatsApp (<strong>{settings.phone}</strong>). Once approved, wholesale rates will unlock immediately.
             </p>
           </div>
 
@@ -134,14 +126,14 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
               <Store className="w-3.5 h-3.5 text-blue-700" />
-              <span>{language === 'bn' ? 'আপনার নাম / দোকানের নাম *' : 'Your Name / Shop Name *'}</span>
+              <span>Your Name / Shop Name *</span>
             </label>
             <input
               type="text"
               required
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder={language === 'bn' ? 'যেমন: রহিম ওয়াটার ফিল্টার / মোঃ আশিক' : 'e.g. Rahim Water Solution / Md Ashique'}
+              placeholder="e.g. Rahim Water Solution / Md Ashique"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-semibold"
             />
           </div>
@@ -150,7 +142,7 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
               <Phone className="w-3.5 h-3.5 text-blue-700" />
-              <span>{language === 'bn' ? 'আপনার মোবাইল নম্বর *' : 'Your Mobile Number *'}</span>
+              <span>Your Mobile Number *</span>
             </label>
             <input
               type="tel"
@@ -166,13 +158,13 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-slate-500" />
-              <span>{language === 'bn' ? 'ঠিকানা / এলাকা (ঐচ্ছিক)' : 'Address / Area (Optional)'}</span>
+              <span>Address / Area (Optional)</span>
             </label>
             <input
               type="text"
               value={customerAddress}
               onChange={(e) => setCustomerAddress(e.target.value)}
-              placeholder={language === 'bn' ? 'যেমন: কালিয়াচক, মালদা' : 'e.g. Kaliachak, Malda'}
+              placeholder="e.g. Kaliachak, Malda"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
             />
           </div>
@@ -184,14 +176,14 @@ export const WholesaleRequestModal: React.FC<WholesaleRequestModalProps> = ({
               onClick={onClose}
               className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer"
             >
-              {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              Cancel
             </button>
             <button
               type="submit"
               className="flex-2 py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs sm:text-sm shadow-md transition cursor-pointer flex items-center justify-center gap-2"
             >
               <Send className="w-4 h-4" />
-              <span>{language === 'bn' ? 'হোয়াটসঅ্যাপে রিকোয়েস্ট পাঠান' : 'Send via WhatsApp'}</span>
+              <span>Send via WhatsApp</span>
             </button>
           </div>
         </form>

@@ -4,13 +4,8 @@ import {
   Upload, 
   Trash2, 
   Check, 
-  Plus, 
   Boxes, 
-  DollarSign, 
-  Percent, 
-  Tag, 
-  Layers, 
-  Info 
+  DollarSign
 } from 'lucide-react';
 import { BusinessSettings, Language, Product } from '../types';
 import { translations } from '../i18n/translations';
@@ -33,30 +28,25 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onSave,
   productToEdit,
   categories,
-  onAddCategory,
   language,
   settings,
 }) => {
   const t = translations[language];
 
-  // Form states
+  // Form states - price inputs start as blank strings "" so no leading 0
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const [category, setCategory] = useState(categories[0] || 'RO Membrane');
   const [unit, setUnit] = useState('Piece');
-  const [moq, setMoq] = useState<number>(1);
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
-  const [wholesalePrice, setWholesalePrice] = useState<number>(0);
-  const [retailPrice, setRetailPrice] = useState<number>(0);
-  const [stockQuantity, setStockQuantity] = useState<number>(0);
-  const [supplierName, setSupplierName] = useState('');
-  const [description, setDescription] = useState('');
+  const [wholesaleMoq, setWholesaleMoq] = useState<string>('1');
+  const [distributorMoq, setDistributorMoq] = useState<string>('10');
+  const [initialAddQty, setInitialAddQty] = useState<string>('10');
+  const [qtyStep, setQtyStep] = useState<string>('1');
+  const [purchasePrice, setPurchasePrice] = useState<string>('');
+  const [wholesalePrice, setWholesalePrice] = useState<string>('');
+  const [retailPrice, setRetailPrice] = useState<string>('');
+  const [stockQuantity, setStockQuantity] = useState<string>('10');
   const [imageUrl, setImageUrl] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
-
-  // Custom category input
-  const [isAddingNewCat, setIsAddingNewCat] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
 
   // Validation
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,43 +56,47 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     if (productToEdit) {
       setName(productToEdit.name);
       setCode(productToEdit.code);
-      setCategory(productToEdit.category);
       setUnit(productToEdit.unit);
-      setMoq(productToEdit.moq);
-      setPurchasePrice(productToEdit.purchasePrice);
-      setWholesalePrice(productToEdit.wholesalePrice);
-      setRetailPrice(productToEdit.retailPrice);
-      setStockQuantity(productToEdit.stockQuantity || 0);
-      setSupplierName(productToEdit.supplierName || '');
-      setDescription(productToEdit.description || '');
+      setWholesaleMoq(String(productToEdit.wholesaleMoq || 1));
+      const distMoq = productToEdit.distributorMoq || productToEdit.moq || 10;
+      setDistributorMoq(String(distMoq));
+      setInitialAddQty(String(productToEdit.initialAddQty || distMoq || 1));
+      setQtyStep(String(productToEdit.qtyStep || 1));
+      setPurchasePrice(productToEdit.purchasePrice ? String(productToEdit.purchasePrice) : '');
+      setWholesalePrice(productToEdit.wholesalePrice ? String(productToEdit.wholesalePrice) : '');
+      setRetailPrice(productToEdit.retailPrice ? String(productToEdit.retailPrice) : '');
+      setStockQuantity(String(productToEdit.stockQuantity || 0));
       setImageUrl(productToEdit.imageUrl || '');
       setIsActive(productToEdit.isActive);
     } else {
-      // Defaults for new product
+      // Defaults for clean new product - blank price strings
       setName('');
-      // Auto-suggest next code
       setCode(`RO-${Math.floor(100 + Math.random() * 900)}`);
-      setCategory(categories[0] || 'RO Membrane');
       setUnit('Piece');
-      setMoq(1);
-      setPurchasePrice(0);
-      setWholesalePrice(0);
-      setRetailPrice(0);
-      setStockQuantity(10);
-      setSupplierName('');
-      setDescription('');
+      setWholesaleMoq('1');
+      setDistributorMoq('10');
+      setInitialAddQty('10');
+      setQtyStep('1');
+      setPurchasePrice('');
+      setWholesalePrice('');
+      setRetailPrice('');
+      setStockQuantity('10');
       setImageUrl('');
       setIsActive(true);
     }
     setErrors({});
-  }, [productToEdit, isOpen, categories]);
+  }, [productToEdit, isOpen]);
 
   if (!isOpen) return null;
 
   // Real-time profit calculations
+  const numPurchase = parseFloat(purchasePrice) || 0;
+  const numRetail = parseFloat(retailPrice) || 0;
+  const numWholesale = parseFloat(wholesalePrice) || 0;
+
   const { profitAmount, profitCostPct, profitMarginPct } = calculateProfit(
-    purchasePrice,
-    retailPrice
+    numPurchase,
+    numRetail
   );
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,14 +115,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
-  const handleCreateNewCategory = () => {
-    if (!newCatName.trim()) return;
-    onAddCategory(newCatName.trim());
-    setCategory(newCatName.trim());
-    setNewCatName('');
-    setIsAddingNewCat(false);
-  };
-
   const handleSubmit = (andAddAnother: boolean = false) => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Product name is required';
@@ -139,26 +125,33 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
 
     const safeCode = code.trim() || productToEdit?.code || `RO-${Math.floor(1000 + Math.random() * 9000)}`;
+    const parsedDistMoq = Math.max(1, parseInt(distributorMoq) || 1);
+    const parsedWholesaleMoq = Math.max(1, parseInt(wholesaleMoq) || 1);
+    const parsedInitialAdd = Math.max(1, parseInt(initialAddQty) || parsedDistMoq);
 
     onSave(
       {
         name: name.trim(),
         code: safeCode.toUpperCase(),
-        category,
+        category: productToEdit?.category || 'RO General',
         unit,
-        moq: Math.max(1, Number(moq) || 1),
-        purchasePrice: Math.max(0, Number(purchasePrice) || 0),
-        wholesalePrice: Math.max(0, Number(wholesalePrice) || 0),
-        retailPrice: Math.max(0, Number(retailPrice) || 0),
+        moq: parsedDistMoq,
+        distributorMoq: parsedDistMoq,
+        wholesaleMoq: parsedWholesaleMoq,
+        initialAddQty: parsedInitialAdd,
+        qtyStep: Math.max(1, parseInt(qtyStep) || 1),
+        purchasePrice: Math.max(0, numPurchase),
+        wholesalePrice: Math.max(0, numWholesale),
+        retailPrice: Math.max(0, numRetail),
         profitAmount,
         profitCostPct,
         profitMarginPct,
-        stockQuantity: Number(stockQuantity) || 0,
-        supplierName: supplierName.trim(),
-        description: description.trim(),
+        stockQuantity: parseInt(stockQuantity) || 0,
+        supplierName: '',
+        description: '',
         imageUrl,
         isActive,
-        isDemo: false, // Newly added or edited items are genuine shop records
+        isDemo: false,
       },
       andAddAnother
     );
@@ -166,22 +159,21 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     if (andAddAnother) {
       setName('');
       setCode(`RO-${Math.floor(100 + Math.random() * 900)}`);
-      setPurchasePrice(0);
-      setWholesalePrice(0);
-      setRetailPrice(0);
-      setDescription('');
+      setPurchasePrice('');
+      setWholesalePrice('');
+      setRetailPrice('');
       setImageUrl('');
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto animate-in fade-in">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div>
             <h3 className="font-extrabold text-base sm:text-lg">
-              {productToEdit ? t.editProduct : t.addProductBtn}
+              {productToEdit ? 'Edit Product' : '+ Add New Product'}
             </h3>
             <p className="text-xs text-slate-400">
               {settings.businessName} • RO Water Purifiers & Spares
@@ -189,7 +181,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-full text-slate-400 hover:text-white transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -197,16 +189,16 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         {/* Form Body */}
         <div className="p-5 overflow-y-auto space-y-4">
-          {/* Row 1: Product Name (SKU code input removed per user request) */}
+          {/* Row 1: Product Name */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-              {t.formProductName} <span className="text-red-500">*</span>
+              Product Name *
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. RO Membrane 75 GPD Vontron"
+              placeholder="e.g. 100 GPD Booster Pump / RO Membrane"
               className={`w-full px-3.5 py-2.5 rounded-xl border ${
                 errors.name ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'
               } focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold`}
@@ -214,86 +206,119 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             {errors.name && <span className="text-xs text-red-500 mt-1 block">{errors.name}</span>}
           </div>
 
-          {/* Row 2: Category, Unit, MOQ */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">
-                  {t.formCategory}
+          {/* Row 2: Unit */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+              Unit
+            </label>
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {PRESET_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Row 3: Minimum Order Quantities & Cart Behavior */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <Boxes className="w-3.5 h-3.5 text-blue-700" />
+              <span>Order Quantities & Cart Add Behavior</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Wholesale MOQ */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Wholesale Min Order (MOQ)
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setIsAddingNewCat(!isAddingNewCat)}
-                  className="text-[11px] font-bold text-blue-700 hover:underline cursor-pointer"
-                >
-                  + Add New
-                </button>
+                <input
+                  type="number"
+                  min="1"
+                  value={wholesaleMoq}
+                  onChange={(e) => setWholesaleMoq(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:ring-2 focus:ring-blue-500"
+                  placeholder="1"
+                />
+                <span className="text-[10px] text-slate-500">Min order in Wholesale catalog</span>
               </div>
 
-              {isAddingNewCat ? (
-                <div className="flex gap-1">
+              {/* Distributor MOQ */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Distributor Min Order (MOQ)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={distributorMoq}
+                  onChange={(e) => setDistributorMoq(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:ring-2 focus:ring-blue-500"
+                  placeholder="10"
+                />
+                <span className="text-[10px] text-slate-500">Min order in Distributor catalog</span>
+              </div>
+
+              {/* First '+' Click Add Quantity */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  First Click Add Qty (+1st Click)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={initialAddQty}
+                  onChange={(e) => setInitialAddQty(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-blue-300 bg-blue-50/50 text-blue-900 text-sm font-black focus:ring-2 focus:ring-blue-500"
+                  placeholder="10"
+                />
+                <span className="text-[10px] text-blue-700 font-medium">
+                  Exact quantity added on first '+' click (e.g. 100)
+                </span>
+              </div>
+
+              {/* Subsequent Increment Step */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Next Click Step (+/-)
+                </label>
+                <div className="flex gap-1.5 items-center">
                   <input
-                    type="text"
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="New category..."
-                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-blue-400 text-xs"
+                    type="number"
+                    min="1"
+                    value={qtyStep}
+                    onChange={(e) => setQtyStep(e.target.value)}
+                    className="w-20 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:ring-2 focus:ring-blue-500"
+                    placeholder="1"
                   />
-                  <button
-                    type="button"
-                    onClick={handleCreateNewCategory}
-                    className="px-2 py-1 bg-blue-700 text-white rounded-lg text-xs font-bold"
-                  >
-                    OK
-                  </button>
+                  <div className="flex gap-1 flex-1 overflow-x-auto">
+                    {['1', '5', '10', '50'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setQtyStep(preset)}
+                        className={`px-2 py-1 text-xs font-bold rounded-lg border transition ${
+                          qtyStep === preset
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                        }`}
+                      >
+                        +{preset}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                {t.formUnit}
-              </label>
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {PRESET_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                {t.formMoq}
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={moq}
-                onChange={(e) => setMoq(parseInt(e.target.value) || 1)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                <span className="text-[10px] text-slate-500">Increments after initial add</span>
+              </div>
             </div>
           </div>
 
-          {/* Row 3: Prices (Purchase, Wholesale, Retail) */}
+          {/* Row 4: Prices in Indian Rupees (₹) */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <DollarSign className="w-3.5 h-3.5 text-blue-700" />
@@ -301,9 +326,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Purchase Price */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t.formPurchasePrice}
+                  Purchase Price (Cost)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
@@ -312,15 +338,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     step="any"
                     min="0"
                     value={purchasePrice}
-                    onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}
-                    className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    placeholder="0"
+                    className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
+              {/* Wholesale Price (Distributor Rate) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t.formWholesalePrice}
+                  Distributor Rate
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
@@ -329,15 +357,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     step="any"
                     min="0"
                     value={wholesalePrice}
-                    onChange={(e) => setWholesalePrice(parseFloat(e.target.value) || 0)}
-                    className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:ring-2 focus:ring-blue-500 text-blue-900"
+                    onChange={(e) => setWholesalePrice(e.target.value)}
+                    placeholder="0"
+                    className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:ring-2 focus:ring-blue-500 text-blue-900"
                   />
                 </div>
               </div>
 
+              {/* Retail Price (Wholesale Rate for Open Catalog) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t.formRetailPrice}
+                  Wholesale Rate
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
@@ -346,8 +376,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     step="any"
                     min="0"
                     value={retailPrice}
-                    onChange={(e) => setRetailPrice(parseFloat(e.target.value) || 0)}
-                    className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 text-emerald-900"
+                    onChange={(e) => setRetailPrice(e.target.value)}
+                    placeholder="0"
+                    className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 text-emerald-900"
                   />
                 </div>
               </div>
@@ -358,15 +389,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <span className="font-bold text-slate-600">Calculated Profit:</span>
               <div className="flex items-center gap-3">
                 <span className={`font-black ${profitAmount >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                  Amount: ₹{formatINRNumber(profitAmount, 2)}
+                  ₹{formatINRNumber(profitAmount, 2)}
                 </span>
                 <span className="text-slate-300">|</span>
                 <span className="font-bold text-slate-700">
-                  Markup: {profitCostPct}%
+                  {profitCostPct}% markup
                 </span>
                 <span className="text-slate-300">|</span>
                 <span className="font-bold text-emerald-700">
-                  Margin: {profitMarginPct}%
+                  {profitMarginPct}% margin
                 </span>
               </div>
             </div>
@@ -375,13 +406,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           {/* Row 4: Stock Quantity */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-              {t.formStock}
+              Stock Quantity
             </label>
             <input
               type="number"
               min="0"
               value={stockQuantity}
-              onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)}
+              onChange={(e) => setStockQuantity(e.target.value)}
+              placeholder="0"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -389,7 +421,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           {/* Row 5: Product Photo Upload & Compression */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-              {t.formImage}
+              Product Photo (Optional)
             </label>
             <div className="flex items-center gap-4 p-3 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
               {imageUrl ? (
@@ -427,10 +459,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>{isProcessingImg ? 'Compressing...' : t.formUploadImage}</span>
+                  <span>{isProcessingImg ? 'Compressing...' : 'Upload Photo'}</span>
                 </label>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  JPG, PNG, or WebP. Automatically optimized for mobile speed.
+                  JPG, PNG, or WebP.
                 </p>
               </div>
             </div>
@@ -446,7 +478,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 className="w-4 h-4 text-blue-600 rounded"
               />
               <span className="text-xs font-bold text-slate-800">
-                {t.formActiveStatus}
+                In Stock (Active & Visible in Catalog)
               </span>
             </label>
           </div>
@@ -459,7 +491,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-200 transition cursor-pointer"
           >
-            {t.cancel}
+            Cancel
           </button>
 
           {!productToEdit && (
@@ -468,7 +500,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               onClick={() => handleSubmit(true)}
               className="px-4 py-2.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-900 text-xs font-bold transition cursor-pointer"
             >
-              {t.saveAndAddAnother}
+              Save & Add Another
             </button>
           )}
 
@@ -478,7 +510,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             className="px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer"
           >
             <Check className="w-4 h-4" />
-            <span>{t.saveProduct}</span>
+            <span>Save Product</span>
           </button>
         </div>
       </div>

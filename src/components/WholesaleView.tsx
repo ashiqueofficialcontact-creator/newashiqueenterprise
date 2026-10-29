@@ -9,7 +9,6 @@ import {
   ShieldCheck, 
   EyeOff, 
   PhoneCall, 
-  RefreshCw,
   UserCheck,
   Sparkles,
   Eye,
@@ -68,6 +67,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [pdfScope, setPdfScope] = useState<'all' | 'filtered'>('filtered');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [wholesaleOrder, setWholesaleOrder] = useState<Record<string, number>>({});
 
   // Registered customer identity state
   const [customerPhone, setCustomerPhone] = useState<string>(() => loadCurrentCustomerPhone());
@@ -80,27 +80,108 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
   const [lookupInput, setLookupInput] = useState('');
   const [lookupMessage, setLookupMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Sync customer record when phone changes or approval state changes
-  useEffect(() => {
-    const current = loadCurrentCustomerPhone();
-    setCustomerPhone(current);
-    if (current) {
-      setCustomerRecord(getCustomerWholesaleStatus(current));
-    } else {
-      setCustomerRecord(null);
-    }
-  }, [isWholesaleApproved]);
+  const handleWholesaleQty = (product: Product, delta: number) => {
+    const initialJump = product.initialAddQty || product.distributorMoq || product.moq || 1;
+    const step = Math.max(1, product.qtyStep || 1);
+    setWholesaleOrder((prev) => {
+      const current = prev[product.id] || 0;
+      if (current === 0 && delta > 0) {
+        // First click jumps to the exact initial quantity set by the owner (e.g. 100)
+        return { ...prev, [product.id]: initialJump };
+      }
+      const next = current + delta * step;
+      if (next <= 0) {
+        const copy = { ...prev };
+        delete copy[product.id];
+        return copy;
+      }
+      return { ...prev, [product.id]: next };
+    });
+  };
 
-  const refreshCustomerStatus = () => {
-    const current = loadCurrentCustomerPhone();
-    if (current) {
-      const rec = getCustomerWholesaleStatus(current);
-      setCustomerRecord(rec);
-      if (rec?.status === 'approved') {
-        onApproveWholesale();
+  const handleDirectWholesaleQty = (productId: string, val: string) => {
+    const num = parseInt(val) || 0;
+    setWholesaleOrder((prev) => {
+      if (num <= 0) {
+        const copy = { ...prev };
+        delete copy[productId];
+        return copy;
+      }
+      return { ...prev, [productId]: num };
+    });
+  };
+
+  const selectedWholesaleCount = Object.keys(wholesaleOrder).length;
+  const totalWholesaleAmount = useMemo(() => {
+    return Object.entries(wholesaleOrder).reduce((sum, [pId, qty]) => {
+      const prod = products.find((p) => p.id === pId);
+      return sum + (prod ? prod.wholesalePrice * qty : 0);
+    }, 0);
+  }, [wholesaleOrder, products]);
+
+  const handleSendWholesaleOrderWhatsApp = () => {
+    if (selectedWholesaleCount === 0) return;
+    const cleanPhone = settings.whatsapp.replace(/\D/g, '');
+    const phoneWithCode = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+
+    const lines: string[] = [];
+    lines.push(`📦 *${settings.businessName} - Distributor Order*`);
+    if (customerRecord?.customerName) {
+      lines.push(`👤 Distributor / Dealer: *${customerRecord.customerName}* (${customerRecord.customerPhone})`);
+    }
+    lines.push(`📍 ${settings.address}`);
+    lines.push(`📞 Shop Phone: ${settings.phone}`);
+    lines.push(`----------------------------------`);
+    lines.push(`📋 *Order Items:*`);
+
+    let idx = 1;
+    for (const [pId, qty] of Object.entries(wholesaleOrder)) {
+      const prod = products.find((p) => p.id === pId);
+      if (prod) {
+        const itemTotal = prod.wholesalePrice * qty;
+        lines.push(`${idx}. *${prod.name}*`);
+        lines.push(`   Qty: ${qty} ${prod.unit} × ₹${formatINRNumber(prod.wholesalePrice, settings.decimalPlaces)} = ₹${formatINRNumber(itemTotal, settings.decimalPlaces)}`);
+        idx++;
       }
     }
+
+    lines.push(`----------------------------------`);
+    lines.push(`💰 *Total Estimated Amount: ₹${formatINRNumber(totalWholesaleAmount, settings.decimalPlaces)}*`);
+    lines.push(`----------------------------------`);
+    lines.push(`Please confirm distributor stock availability and prepare invoice.`);
+
+    const encoded = encodeURIComponent(lines.join('\n'));
+    window.open(`https://wa.me/${phoneWithCode}?text=${encoded}`, '_blank');
   };
+
+  // Sync customer record when phone changes or approval state changes
+  useEffect(() => {
+    const sync = () => {
+      const current = loadCurrentCustomerPhone();
+      setCustomerPhone(current);
+      if (current) {
+        const rec = getCustomerWholesaleStatus(current);
+        setCustomerRecord(rec);
+        if (rec?.status === 'approved' && !isWholesaleApproved) {
+          onApproveWholesale();
+        } else if (rec?.status === 'hidden' && isWholesaleApproved) {
+          onRevokeWholesale();
+        }
+      } else {
+        setCustomerRecord(null);
+      }
+    };
+
+    sync();
+    window.addEventListener('storage', sync);
+    window.addEventListener('focus', sync);
+    const timer = setInterval(sync, 2500);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('focus', sync);
+      clearInterval(timer);
+    };
+  }, [isWholesaleApproved, onApproveWholesale, onRevokeWholesale]);
 
   // Active products only
   const displayableProducts = useMemo(() => {
@@ -228,12 +309,10 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
           </div>
           <div>
             <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-              {language === 'bn' ? 'হোলসেল সেকশনটি বর্তমানে হাইড আছে' : 'Wholesale Section Currently Hidden'}
+              Distributor Section Currently Hidden
             </h3>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              {language === 'bn'
-                ? 'দোকানের হোলসেল পাইকারি ক্যাটালগ বর্তমানে অফলাইন রাখা হয়েছে। সাধারণ খুচরো দর দেখতে ড্যাশবোর্ড থেকে রিটেল (Retail) সেকশন খুলুন অথবা সরাসরি শপে কল করুন।'
-                : 'Wholesale pricing is temporarily hidden from the public view. Please check our Retail catalog or call the shop directly.'}
+              Distributor trade pricing is temporarily offline. Please check our Wholesale catalog from the dashboard or call the shop directly.
             </p>
           </div>
           <div className="pt-2">
@@ -242,7 +321,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md"
             >
               <PhoneCall className="w-4 h-4 text-cyan-400" />
-              <span>{language === 'bn' ? 'দোকানে সরাসরি কল করুন: ' + settings.phone : 'Call Shop: ' + settings.phone}</span>
+              <span>Call Shop: {settings.phone}</span>
             </a>
           </div>
         </div>
@@ -262,36 +341,29 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
           <div>
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-100 text-rose-900 text-xs font-bold mb-2">
               <EyeOff className="w-3.5 h-3.5 text-rose-600" />
-              <span>{language === 'bn' ? 'হোলসেল রেট সাময়িক বন্ধ' : 'Wholesale Access Paused'}</span>
+              <span>Distributor Access Paused</span>
             </span>
 
             <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-              {language === 'bn'
-                ? `প্রিয় ${customerRecord?.customerName || 'গ্রাহক'}, হোলসেল বর্তমানে হাইড আছে`
-                : 'Wholesale Rates Currently Paused'}
+              {customerRecord?.customerName ? `Dear ${customerRecord.customerName}, Distributor Rates Paused` : 'Distributor Rates Paused'}
             </h3>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              {language === 'bn'
-                ? 'আপনার অ্যাকাউন্টে হোলসেল পাইকারি দর বর্তমানে শপ কর্তৃপক্ষ কর্তৃক বন্ধ (হাইড) রাখা হয়েছে। আপনার নতুন করে আর রিকোয়েস্ট পাঠাতে হবে না; শপ মালিক অন করে দিলেই আপনি স্বয়ংক্রিয়ভাবে আবার সকল রেট দেখতে পাবেন।'
-                : 'Wholesale rates have been temporarily paused for your account by the shop owner. You do not need to request again; once turned ON by the owner, rates will automatically reappear.'}
+              Distributor trade pricing has been temporarily paused for your account by the shop owner. You do not need to request again; once turned ON by the owner, rates will automatically reappear.
             </p>
           </div>
 
           <div className="space-y-2 pt-2">
-            <button
-              onClick={refreshCustomerStatus}
-              className="w-full py-3 px-4 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>{language === 'bn' ? 'স্ট্যাটাস রিফ্রেশ করুন (Refresh)' : 'Check / Refresh Status'}</span>
-            </button>
+            <div className="p-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Status auto-syncs live in real-time</span>
+            </div>
 
             <a
               href={`tel:${settings.phone}`}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-800 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2 transition"
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition"
             >
-              <PhoneCall className="w-4 h-4 text-emerald-600" />
-              <span>{language === 'bn' ? 'শপ মালিককে কল করুন: ' + settings.phone : 'Call Owner: ' + settings.phone}</span>
+              <PhoneCall className="w-4 h-4 text-emerald-400" />
+              <span>Call Owner: {settings.phone}</span>
             </a>
           </div>
         </div>
@@ -310,12 +382,10 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
 
           <div>
             <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-              {language === 'bn' ? 'অনুরোধটি অনুমোদনের অপেক্ষায় আছে' : 'Request Pending Approval'}
+              Request Pending Approval
             </h3>
             <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-              {language === 'bn'
-                ? `প্রিয় ${customerRecord?.customerName || 'গ্রাহক'}, আপনার হোলসেল রেট দেখার অনুরোধটি মালিকের অনুমোদনের অপেক্ষায় রয়েছে। মালিক অনুমোদন করলেই এই ফোনে রেট খুলে যাবে।`
-                : 'Your wholesale access request is awaiting owner approval. Once approved, rates will unlock automatically on this phone.'}
+              {customerRecord?.customerName ? `Dear ${customerRecord.customerName}, ` : ''}Your distributor access request is awaiting owner approval. Once approved, rates will unlock automatically on this phone.
             </p>
           </div>
 
@@ -325,20 +395,17 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
           </div>
 
           <div className="space-y-2 pt-1">
-            <button
-              onClick={refreshCustomerStatus}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>{language === 'bn' ? 'স্ট্যাটাস রিফ্রেশ করুন' : 'Refresh Status'}</span>
-            </button>
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Auto-unlocks once owner approves</span>
+            </div>
 
             <a
               href={`tel:${settings.phone}`}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-800 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2 transition"
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition"
             >
-              <PhoneCall className="w-4 h-4 text-blue-700" />
-              <span>{language === 'bn' ? 'মালিককে সরাসরি কল করুন' : 'Call Owner'}</span>
+              <PhoneCall className="w-4 h-4 text-cyan-400" />
+              <span>Call Owner</span>
             </a>
           </div>
         </div>
@@ -357,12 +424,10 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
 
           <div>
             <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-              {language === 'bn' ? 'হোলসেল দেখার অনুমতি আবশ্যক' : 'Wholesale Approval Required'}
+              Distributor Access Approval Required
             </h3>
             <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-              {language === 'bn'
-                ? 'হোলসেল পাইকারি দর দেখার জন্য দোকানের মালিকের অনুমোদনের প্রয়োজন। নিচে রিকোয়েস্ট সাবমিট করলে মালিক সরাসরি হোয়াটসঅ্যাপে অনুমোদন করতে পারবেন।'
-                : 'Viewing wholesale bulk rates requires shop owner approval. Submit a request once to send an approval notification to the owner.'}
+              Viewing distributor bulk rates requires shop owner approval. Submit a request once to send an approval notification to the owner.
             </p>
           </div>
 
@@ -384,7 +449,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               className="w-full py-3.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs sm:text-sm shadow-md transition cursor-pointer flex items-center justify-center gap-2"
             >
               <MessageSquare className="w-4 h-4" />
-              <span>{language === 'bn' ? 'হোয়াটসঅ্যাপে অনুমতির রিকোয়েস্ট পাঠান' : 'Request Access via WhatsApp'}</span>
+              <span>Request Access via WhatsApp</span>
             </button>
 
             {/* Quick Phone Verification (if already requested/approved before) */}
@@ -393,11 +458,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Phone className="w-3.5 h-3.5 text-blue-600" />
-              <span>
-                {language === 'bn'
-                  ? 'ইতিমধ্যে অনুমোদিত গ্রাহক? ফোন নম্বর দিয়ে চেক করুন'
-                  : 'Already Approved? Verify Phone Number'}
-              </span>
+              <span>Already Approved? Verify Phone Number</span>
             </button>
 
             {/* Inline Phone Lookup Form */}
@@ -407,14 +468,14 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
                   type="tel"
                   value={lookupInput}
                   onChange={(e) => setLookupInput(e.target.value)}
-                  placeholder={language === 'bn' ? 'আপনার ১০ সংখ্যার মোবাইল নম্বর দিন' : 'Enter 10-digit mobile number'}
+                  placeholder="Enter 10-digit mobile number"
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   type="submit"
                   className="w-full py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs transition cursor-pointer"
                 >
-                  {language === 'bn' ? 'স্ট্যাটাস যাচাই করুন' : 'Verify Status'}
+                  Verify Status
                 </button>
                 {lookupMessage && (
                   <div className={`p-2 rounded-lg text-[11px] font-bold ${
@@ -435,7 +496,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-sm"
             >
               <PhoneCall className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{language === 'bn' ? 'দোকানে সরাসরি কল করুন' : 'Call Shop Directly'}</span>
+              <span>Call Shop Directly</span>
             </a>
           </div>
         </div>
@@ -466,9 +527,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
             </div>
             <div>
               <div className="font-extrabold text-sm text-slate-900">
-                {language === 'bn'
-                  ? `${pendingRequestsForOwner.length}টি নতুন হোলসেল অনুমোদনের অনুরোধ পেন্ডিং আছে`
-                  : `${pendingRequestsForOwner.length} Wholesale Access Request Pending`}
+                {pendingRequestsForOwner.length} Distributor Access Request Pending
               </div>
               <div className="text-xs text-slate-600">
                 {pendingRequestsForOwner[0].customerName} ({pendingRequestsForOwner[0].customerPhone})
@@ -489,7 +548,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
             className="py-2 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{language === 'bn' ? 'অনুমোদন করুন (Approve)' : 'Approve Now'}</span>
+            <span>Approve Now</span>
           </button>
         </div>
       )}
@@ -500,12 +559,11 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span>
-              {language === 'bn' ? 'অনুমোদিত গ্রাহক:' : 'Approved Customer:'}{' '}
-              <strong className="text-emerald-900">{customerRecord.customerName}</strong>
+              Approved Distributor: <strong className="text-emerald-900">{customerRecord.customerName}</strong>
             </span>
           </div>
           <span className="text-[10px] bg-emerald-200/70 text-emerald-900 font-bold px-2 py-0.5 rounded-full">
-            Wholesale Active
+            Distributor Active
           </span>
         </div>
       )}
@@ -517,7 +575,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
             <div className="flex items-center gap-2 mb-1.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold">
                 <Boxes className="w-3.5 h-3.5" />
-                <span>Bulk Trade Wholesale</span>
+                <span>Distributor Trade Catalog</span>
               </span>
 
               {/* Owner Hide / Unhide Toggle Button */}
@@ -529,17 +587,17 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
                       : 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200'
                   }`}
-                  title={isWholesaleHidden ? 'Click to make Wholesale visible' : 'Click to hide Wholesale from visitors'}
+                  title={isWholesaleHidden ? 'Click to make Distributor visible' : 'Click to hide Distributor from visitors'}
                 >
                   {isWholesaleHidden ? (
                     <>
                       <Eye className="w-3.5 h-3.5" />
-                      <span>{language === 'bn' ? 'হোলসেল আনহাইড করুন' : 'Unhide Wholesale'}</span>
+                      <span>Unhide Distributor</span>
                     </>
                   ) : (
                     <>
                       <EyeOff className="w-3.5 h-3.5" />
-                      <span>{language === 'bn' ? 'হোলসেল হাইড করুন' : 'Hide Wholesale'}</span>
+                      <span>Hide Distributor</span>
                     </>
                   )}
                 </button>
@@ -547,7 +605,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
             </div>
 
             <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight uppercase">
-              {t.wholesaleTitle}
+              DISTRIBUTOR PRICE LIST
             </h2>
             <p className="text-xs text-slate-500">
               {settings.businessName} • {settings.address} • Ph: {settings.phone}
@@ -561,7 +619,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-900/20 transition cursor-pointer"
             >
               <FileDown className="w-4 h-4" />
-              <span>{t.downloadWholesalePdf}</span>
+              <span>Download PDF</span>
             </button>
 
             {/* Support / WhatsApp Share */}
@@ -570,7 +628,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-xs sm:text-sm shadow-sm transition cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
-              <span>{language === 'bn' ? 'হোয়াটসঅ্যাপ' : 'WhatsApp'}</span>
+              <span>WhatsApp</span>
             </button>
           </div>
         </div>
@@ -583,7 +641,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={language === 'bn' ? 'প্রোডাক্টের নাম দিয়ে খুঁজুন...' : 'Search product name...'}
+              placeholder="Search product name..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold transition"
             />
             {searchQuery && (
@@ -600,36 +658,27 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
 
       {/* Showing count indicator */}
       <div className="text-xs text-slate-500 px-1">
-        {language === 'bn' ? 'মোট প্রোডাক্ট:' : 'Showing Products:'}{' '}
-        <strong className="text-slate-800">{filteredProducts.length}</strong>
+        Showing Products: <strong className="text-slate-800">{filteredProducts.length}</strong>
       </div>
 
       {/* Products Display: Desktop Table & Mobile Cards */}
       {filteredProducts.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-slate-200">
           <Boxes className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-          <h4 className="text-base font-bold text-slate-700">{t.noProductsFound}</h4>
+          <h4 className="text-base font-bold text-slate-700">No products found.</h4>
         </div>
       ) : (
         <>
-          {/* Desktop Table: Product Name, Minimum Order (MOQ), Wholesale Price, Unit */}
+          {/* Desktop Table */}
           <div className="hidden md:block bg-white rounded-3xl shadow-xs border border-slate-200 overflow-hidden">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider">
                   <th className="py-3.5 px-5 font-semibold w-12 text-center">#</th>
-                  <th className="py-3.5 px-5 font-semibold">
-                    {language === 'bn' ? 'প্রোডাক্টের নাম' : 'Product Name'}
-                  </th>
-                  <th className="py-3.5 px-5 font-semibold text-center w-48">
-                    {language === 'bn' ? 'মিনিমাম অর্ডার (MOQ)' : 'Minimum Order (MOQ)'}
-                  </th>
-                  <th className="py-3.5 px-5 font-semibold text-right w-44">
-                    {language === 'bn' ? 'হোলসেল দর (₹)' : 'Wholesale Price (₹)'}
-                  </th>
-                  <th className="py-3.5 px-5 font-semibold text-center w-28">
-                    {language === 'bn' ? 'একক' : 'Unit'}
-                  </th>
+                  <th className="py-3.5 px-5 font-semibold">Product Name</th>
+                  <th className="py-3.5 px-5 font-semibold text-center w-48">Minimum Order (MOQ)</th>
+                  <th className="py-3.5 px-5 font-semibold text-right w-44">Distributor Rate (₹)</th>
+                  <th className="py-3.5 px-5 font-semibold text-center w-28">Unit</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -650,7 +699,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
                     </td>
                     <td className="py-3.5 px-5 text-center">
                       <span className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
-                        Min {product.moq} {product.unit}s
+                        Min {product.distributorMoq || product.moq || 1} {product.unit}s
                       </span>
                     </td>
                     <td className="py-3.5 px-5 text-right">
@@ -668,49 +717,117 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
           </div>
 
           {/* Mobile Cards */}
-          <div className="md:hidden space-y-2.5">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between"
-              >
-                <div>
-                  <h4 className="font-black text-slate-900 text-sm leading-snug">
-                    {product.name}
-                  </h4>
-                  {product.description && (
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      {product.description}
-                    </p>
-                  )}
-                </div>
+          <div className="md:hidden space-y-3">
+            {filteredProducts.map((product) => {
+              const qty = wholesaleOrder[product.id] || 0;
+              const isSelected = qty > 0;
 
-                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-slate-500 block">
-                      {language === 'bn' ? 'মিনিমাম অর্ডার' : 'Minimum Order'}
-                    </span>
-                    <span className="font-bold text-xs text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 inline-block">
-                      Min {product.moq} {product.unit}s
-                    </span>
+              return (
+                <div
+                  key={product.id}
+                  className={`bg-white rounded-3xl p-4 sm:p-5 shadow-xs border transition-all ${
+                    isSelected ? 'border-blue-500 ring-2 ring-blue-500/15' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <h4 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">
+                        {product.name}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {language === 'bn' ? 'প্রতি' : 'per'} {product.unit}
+                        </span>
+                        {product.qtyStep && product.qtyStep > 1 ? (
+                          <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-1.5 py-0.5 rounded-md border border-blue-200">
+                            ধাপ: +{product.qtyStep}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Quantity Picker for Bulk Order */}
+                    <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-2xl border border-slate-200 flex-shrink-0">
+                      <button
+                        onClick={() => handleWholesaleQty(product, -1)}
+                        disabled={qty === 0}
+                        className="w-7 h-7 rounded-xl bg-white hover:bg-slate-200 text-slate-700 disabled:opacity-30 disabled:hover:bg-white flex items-center justify-center font-bold text-xs shadow-2xs cursor-pointer"
+                        title="Decrease"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        value={qty === 0 ? '' : qty}
+                        placeholder="0"
+                        onChange={(e) => handleDirectWholesaleQty(product.id, e.target.value)}
+                        className="w-14 text-center font-bold text-xs text-slate-900 font-mono bg-white rounded-lg border border-slate-200 py-1 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => handleWholesaleQty(product, 1)}
+                        className="w-7 h-7 rounded-xl bg-blue-900 hover:bg-blue-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs cursor-pointer"
+                        title={qty === 0 ? `Add ${product.initialAddQty || product.distributorMoq || product.moq || 1}` : `Add ${product.qtyStep || 1}`}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[11px] text-slate-500 block">
-                      {language === 'bn' ? 'হোলসেল রেট' : 'Wholesale Rate'}
-                    </span>
-                    <div className="text-base font-black text-blue-900">
-                      ₹{formatINRNumber(product.wholesalePrice, settings.decimalPlaces)}
-                      <span className="text-[11px] font-normal text-slate-500 ml-1">
-                        / {product.unit}
+                  {/* Clean Divider Line Between Name and Price */}
+                  <div className="border-t border-slate-200/90 my-3"></div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block">
+                        Minimum Order (MOQ)
                       </span>
+                      <span className="font-bold text-xs text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 inline-block">
+                        Min {product.distributorMoq || product.moq || 1} {product.unit}s
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[11px] text-slate-500 block">
+                        Distributor Rate
+                      </span>
+                      <div className="text-base sm:text-lg font-black text-blue-900 font-mono">
+                        ₹{formatINRNumber(product.wholesalePrice, settings.decimalPlaces)}
+                        <span className="text-[11px] font-normal text-slate-500 ml-1">
+                          / {product.unit}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
+      )}
+
+      {/* Floating Wholesale Order Cart Bar */}
+      {selectedWholesaleCount > 0 && (
+        <div className="fixed bottom-24 sm:bottom-28 left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[480px] sm:left-1/2 sm:-translate-x-1/2 z-40 animate-in slide-in-from-bottom duration-200">
+          <div className="bg-slate-950 text-white p-3.5 rounded-3xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] text-cyan-400 font-bold">
+                {selectedWholesaleCount} items selected in distributor order
+              </div>
+              <div className="text-base sm:text-lg font-black text-white font-mono">
+                ₹{formatINRNumber(totalWholesaleAmount, settings.decimalPlaces)}
+              </div>
+            </div>
+
+            <button
+              onClick={handleSendWholesaleOrderWhatsApp}
+              className="py-2.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Order via WhatsApp</span>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* PDF Download Options Modal */}
