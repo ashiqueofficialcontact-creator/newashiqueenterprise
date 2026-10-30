@@ -345,9 +345,12 @@ export default function App() {
     }
   }, []);
 
-  // Swipe gesture navigation for horizontal sliding between Wholesale, Retail, and Home
+  // Swipe gesture navigation: real-time finger-following drag system
+  const swipeContainerRef = useRef<HTMLDivElement | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
+  const isHorizontalGesture = useRef<boolean | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
@@ -356,34 +359,89 @@ export default function App() {
     if (target.closest('input, textarea, select, [data-no-swipe]')) return;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    isDraggingRef.current = true;
+    isHorizontalGesture.current = null;
+    if (swipeContainerRef.current) {
+      swipeContainerRef.current.style.transition = 'none'; // Real-time finger follow
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current || touchStartX.current === null || touchStartY.current === null) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartX.current;
+    const diffY = currentY - touchStartY.current;
+
+    // Detect direction lock on first significant movement
+    if (isHorizontalGesture.current === null) {
+      if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
+        isHorizontalGesture.current = Math.abs(diffX) > Math.abs(diffY);
+      }
+    }
+
+    // If vertical scrolling, keep native vertical scroll free
+    if (isHorizontalGesture.current === false) return;
+
+    if (isHorizontalGesture.current === true && swipeContainerRef.current) {
+      const pageWidth = window.innerWidth;
+      let moveX = -(currentTabIdx * pageWidth) + diffX;
+
+      // Clamp boundary overshoot
+      if (moveX > 0) moveX = 0;
+      const maxMove = -((visibleTabs.length - 1) * pageWidth);
+      if (moveX < maxMove) moveX = maxMove;
+
+      swipeContainerRef.current.style.transform = `translateX(${moveX}px)`;
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    if (activeSubView !== 'none') {
-      touchStartX.current = null;
-      touchStartY.current = null;
+    if (!isDraggingRef.current || touchStartX.current === null) {
+      isDraggingRef.current = false;
       return;
     }
+    isDraggingRef.current = false;
 
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (swipeContainerRef.current) {
+      swipeContainerRef.current.style.transition = 'transform 0.25s ease-out';
+    }
+
+    const endX = e.changedTouches[0].clientX;
+    const diff = endX - touchStartX.current;
+    const isHorizontal = isHorizontalGesture.current;
 
     touchStartX.current = null;
     touchStartY.current = null;
+    isHorizontalGesture.current = null;
 
-    // Strict horizontal dominance check from user reference:
-    // If user is scrolling vertically, horizontal tab swipe does not trigger
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
-      if (deltaX < 0 && currentTabIdx < visibleTabs.length - 1) {
+    if (activeSubView !== 'none') return;
+
+    if (isHorizontal) {
+      if (diff < -60 && currentTabIdx < visibleTabs.length - 1) {
         // Swiped Left (finger moves right to left) -> Next tab
         handleTabChange(visibleTabs[currentTabIdx + 1]);
-      } else if (deltaX > 0 && currentTabIdx > 0) {
+        return;
+      } else if (diff > 60 && currentTabIdx > 0) {
         // Swiped Right (finger moves left to right) -> Previous tab
         handleTabChange(visibleTabs[currentTabIdx - 1]);
+        return;
       }
     }
+
+    // Snap back to current tab
+    if (swipeContainerRef.current) {
+      swipeContainerRef.current.style.transform = `translateX(-${(currentTabIdx / visibleTabs.length) * 100}%)`;
+    }
   };
+
+  // Sync container position when currentTab or visibleTabs change
+  useEffect(() => {
+    if (swipeContainerRef.current) {
+      swipeContainerRef.current.style.transition = 'transform 0.25s ease-out';
+      swipeContainerRef.current.style.transform = `translateX(-${(currentTabIdx / visibleTabs.length) * 100}%)`;
+    }
+  }, [currentTabIdx, visibleTabs.length]);
 
   // Handle switching roles
   const handleToggleRole = () => {
@@ -707,13 +765,15 @@ export default function App() {
         ) : (
           /* WhatsApp Style Continuous Horizontal Sliding Track */
           <div
+            ref={swipeContainerRef}
             className="swipe-container"
             style={{
               width: `${visibleTabs.length * 100}%`,
               transform: `translateX(-${(currentTabIdx / visibleTabs.length) * 100}%)`,
-              transition: 'transform 0.35s cubic-bezier(0.1, 0.9, 0.2, 1)',
+              transition: 'transform 0.25s ease-out',
             }}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
             {visibleTabs.map((tabKey) => (
@@ -930,8 +990,13 @@ export default function App() {
               <button
                 onClick={() => {
                   setIsExitModalOpen(false);
-                  window.close();
-                  window.location.href = 'about:blank';
+                  try {
+                    window.open('', '_self', '');
+                    window.close();
+                  } catch (e) {}
+                  setTimeout(() => {
+                    window.location.href = 'about:blank';
+                  }, 100);
                 }}
                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#075e54] hover:bg-[#064e46] text-white font-bold text-sm shadow-md transition cursor-pointer"
               >
