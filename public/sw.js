@@ -1,9 +1,15 @@
 // Service Worker for NEW ASHIQUE ENTERPRISE PWA
-const CACHE_NAME = 'ashique-ro-v1';
+const CACHE_NAME = 'ashique-ro-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-192x192.png',
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
+  '/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
