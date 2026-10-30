@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   BusinessSettings, 
   Language, 
@@ -127,34 +127,14 @@ export default function App() {
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Tab horizontal slide transition direction
-  const [slideDirection, setSlideDirection] = useState<'forward' | 'backward' | 'none'>('none');
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Navigators that track history & slide direction
-  const handleTabChange = (newTab: ViewTab, overrideDirection?: 'forward' | 'backward') => {
+  // Navigators that track history
+  const handleTabChange = (newTab: ViewTab) => {
     if (currentTab !== newTab || activeSubView !== 'none') {
-      const visibleTabs: ViewTab[] =
-        userRole === 'owner'
-          ? ['home', 'wholesale', 'retail', 'products', 'owner-desk']
-          : isWholesaleHidden
-          ? ['home', 'retail']
-          : ['home', 'wholesale', 'retail'];
-      const oldIdx = visibleTabs.indexOf(currentTab);
-      const newIdx = visibleTabs.indexOf(newTab);
-
-      if (overrideDirection) {
-        setSlideDirection(overrideDirection);
-      } else if (newIdx > oldIdx) {
-        setSlideDirection('forward');
-      } else if (newIdx < oldIdx) {
-        setSlideDirection('backward');
-      }
-
       historyStackRef.current.push({ tab: newTab, subView: 'none' });
       try {
         window.history.pushState({ naeApp: true }, '');
@@ -299,6 +279,21 @@ export default function App() {
     return loadWholesaleRequests().some((r) => r.status === 'pending');
   });
 
+  // Visible tabs based on user role and wholesale visibility
+  const visibleTabs: ViewTab[] = useMemo(() => {
+    if (userRole === 'owner') {
+      return ['home', 'wholesale', 'retail', 'products', 'owner-desk'];
+    }
+    return isWholesaleHidden
+      ? ['home', 'retail']
+      : ['home', 'wholesale', 'retail'];
+  }, [userRole, isWholesaleHidden]);
+
+  const currentTabIdx = useMemo(() => {
+    const idx = visibleTabs.indexOf(currentTab);
+    return idx >= 0 ? idx : 0;
+  }, [visibleTabs, currentTab]);
+
   // Capture beforeinstallprompt for native PWA WebAPK install
   useEffect(() => {
     const handler = (e: Event) => {
@@ -377,30 +372,15 @@ export default function App() {
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // Responsive swipe distance threshold (32px) and horizontal dominance check
-    if (Math.abs(deltaX) < 32 || Math.abs(deltaX) < Math.abs(deltaY) * 1.05) {
-      return;
-    }
-
-    const visibleTabs: ViewTab[] =
-      userRole === 'owner'
-        ? ['home', 'wholesale', 'retail', 'products', 'owner-desk']
-        : isWholesaleHidden
-        ? ['home', 'retail']
-        : ['home', 'wholesale', 'retail'];
-
-    const currentIndex = visibleTabs.indexOf(currentTab);
-    if (currentIndex === -1) return;
-
-    if (deltaX < 0) {
-      // Swiped Left (finger moves right to left) -> Advance to next tab
-      if (currentIndex < visibleTabs.length - 1) {
-        handleTabChange(visibleTabs[currentIndex + 1], 'forward');
-      }
-    } else {
-      // Swiped Right (finger moves left to right) -> Go back to previous tab
-      if (currentIndex > 0) {
-        handleTabChange(visibleTabs[currentIndex - 1], 'backward');
+    // Strict horizontal dominance check from user reference:
+    // If user is scrolling vertically, horizontal tab swipe does not trigger
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+      if (deltaX < 0 && currentTabIdx < visibleTabs.length - 1) {
+        // Swiped Left (finger moves right to left) -> Next tab
+        handleTabChange(visibleTabs[currentTabIdx + 1]);
+      } else if (deltaX > 0 && currentTabIdx > 0) {
+        // Swiped Right (finger moves left to right) -> Previous tab
+        handleTabChange(visibleTabs[currentTabIdx - 1]);
       }
     }
   };
@@ -643,7 +623,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50 flex flex-col font-sans ${language === 'bn' ? 'font-bengali' : ''}`}>
+    <div className={`fixed inset-0 overflow-hidden bg-slate-50 flex flex-col font-sans select-none ${language === 'bn' ? 'font-bengali' : ''}`}>
       {/* Toast popup */}
       {toastMessage && (
         <div className="fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs sm:text-sm font-bold border border-slate-700 animate-in slide-in-from-top-4 duration-200">
@@ -666,25 +646,11 @@ export default function App() {
         }}
       />
 
-      {/* Main Content Area (With smooth horizontal swipe gestures between tabs and elevated clearance) */}
-      <main 
-        className="flex-1 pb-44 sm:pb-48 touch-pan-y overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div
-          key={`${currentTab}_${activeSubView}`}
-          className={
-            slideDirection === 'forward'
-              ? 'tab-slide-forward'
-              : slideDirection === 'backward'
-              ? 'tab-slide-backward'
-              : ''
-          }
-        >
+      {/* Main Content Area (WhatsApp Style Continuous Horizontal Sliding Track) */}
+      <main className="flex-1 w-full overflow-hidden relative">
         {/* If a subview from More is active (e.g. Reports or Settings) */}
         {activeSubView === 'reports' ? (
-          <div className="pt-2">
+          <div className="page-scroll-view pt-2 pb-44 sm:pb-48">
             <div className="max-w-6xl mx-auto px-3 sm:px-6 mb-2">
               <button
                 onClick={() => setActiveSubView('none')}
@@ -702,7 +668,7 @@ export default function App() {
             />
           </div>
         ) : activeSubView === 'settings' ? (
-          <div className="pt-2">
+          <div className="page-scroll-view pt-2 pb-44 sm:pb-48">
             <div className="max-w-4xl mx-auto px-3 sm:px-6 mb-2">
               <button
                 onClick={() => setActiveSubView('none')}
@@ -724,115 +690,135 @@ export default function App() {
             />
           </div>
         ) : activeSubView === 'wholesale-approvals' ? (
-          <WholesaleApprovalsView
-            requests={wholesaleRequests}
-            settings={settings}
-            language={language}
-            isWholesaleApproved={isWholesaleApproved}
-            isWholesaleHidden={isWholesaleHidden}
-            onToggleWholesaleHidden={handleToggleWholesaleHidden}
-            onApproveWholesale={handleApproveWholesale}
-            onRevokeWholesale={handleRevokeWholesale}
-            onRefreshRequests={() => setWholesaleRequests(loadWholesaleRequests())}
-            onBack={() => setActiveSubView('none')}
-          />
+          <div className="page-scroll-view pb-44 sm:pb-48">
+            <WholesaleApprovalsView
+              requests={wholesaleRequests}
+              settings={settings}
+              language={language}
+              isWholesaleApproved={isWholesaleApproved}
+              isWholesaleHidden={isWholesaleHidden}
+              onToggleWholesaleHidden={handleToggleWholesaleHidden}
+              onApproveWholesale={handleApproveWholesale}
+              onRevokeWholesale={handleRevokeWholesale}
+              onRefreshRequests={() => setWholesaleRequests(loadWholesaleRequests())}
+              onBack={() => setActiveSubView('none')}
+            />
+          </div>
         ) : (
-          /* Normal Tab Views */
-          <>
-            {currentTab === 'home' && (
-              <HomeDashboard
-                products={products}
-                settings={settings}
-                language={language}
-                userRole={userRole}
-                onNavigate={handleTabChange}
-                onOpenAddProduct={() => {
-                  setEditingProduct(null);
-                  setIsProductModalOpen(true);
+          /* WhatsApp Style Continuous Horizontal Sliding Track */
+          <div
+            className="swipe-container"
+            style={{
+              width: `${visibleTabs.length * 100}%`,
+              transform: `translateX(-${(currentTabIdx / visibleTabs.length) * 100}%)`,
+              transition: 'transform 0.35s cubic-bezier(0.1, 0.9, 0.2, 1)',
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {visibleTabs.map((tabKey) => (
+              <div
+                key={tabKey}
+                className="page-scroll-view pb-44 sm:pb-48"
+                style={{
+                  width: `${100 / visibleTabs.length}%`,
                 }}
-                onClearDemoData={handleClearDemoData}
-                isWholesaleApproved={isWholesaleApproved}
-                isWholesaleHidden={isWholesaleHidden}
-                onToggleWholesaleHidden={handleToggleWholesaleHidden}
-                hasWholesaleRequest={hasWholesaleRequest}
-                onApproveWholesale={handleApproveWholesale}
-                onRevokeWholesale={handleRevokeWholesale}
-                onOpenApprovalModal={(name, phone, reqId) =>
-                  setApprovalModalData({
-                    isOpen: true,
-                    customerName: name,
-                    customerPhone: phone,
-                    requestId: reqId,
-                  })
-                }
-              />
-            )}
+              >
+                {tabKey === 'home' && (
+                  <HomeDashboard
+                    products={products}
+                    settings={settings}
+                    language={language}
+                    userRole={userRole}
+                    onNavigate={handleTabChange}
+                    onOpenAddProduct={() => {
+                      setEditingProduct(null);
+                      setIsProductModalOpen(true);
+                    }}
+                    onClearDemoData={handleClearDemoData}
+                    isWholesaleApproved={isWholesaleApproved}
+                    isWholesaleHidden={isWholesaleHidden}
+                    onToggleWholesaleHidden={handleToggleWholesaleHidden}
+                    hasWholesaleRequest={hasWholesaleRequest}
+                    onApproveWholesale={handleApproveWholesale}
+                    onRevokeWholesale={handleRevokeWholesale}
+                    onOpenApprovalModal={(name, phone, reqId) =>
+                      setApprovalModalData({
+                        isOpen: true,
+                        customerName: name,
+                        customerPhone: phone,
+                        requestId: reqId,
+                      })
+                    }
+                  />
+                )}
 
-            {currentTab === 'wholesale' && (
-              <WholesaleView
-                products={products}
-                settings={settings}
-                language={language}
-                userRole={userRole}
-                isWholesaleApproved={isWholesaleApproved}
-                isWholesaleHidden={isWholesaleHidden}
-                onToggleWholesaleHidden={handleToggleWholesaleHidden}
-                onApproveWholesale={handleApproveWholesale}
-                onRevokeWholesale={handleRevokeWholesale}
-                onRequestWholesale={handleRequestWholesale}
-                onOpenApprovalModal={(name, phone, reqId) =>
-                  setApprovalModalData({
-                    isOpen: true,
-                    customerName: name,
-                    customerPhone: phone,
-                    requestId: reqId,
-                  })
-                }
-              />
-            )}
+                {tabKey === 'wholesale' && (
+                  <WholesaleView
+                    products={products}
+                    settings={settings}
+                    language={language}
+                    userRole={userRole}
+                    isWholesaleApproved={isWholesaleApproved}
+                    isWholesaleHidden={isWholesaleHidden}
+                    onToggleWholesaleHidden={handleToggleWholesaleHidden}
+                    onApproveWholesale={handleApproveWholesale}
+                    onRevokeWholesale={handleRevokeWholesale}
+                    onRequestWholesale={handleRequestWholesale}
+                    onOpenApprovalModal={(name, phone, reqId) =>
+                      setApprovalModalData({
+                        isOpen: true,
+                        customerName: name,
+                        customerPhone: phone,
+                        requestId: reqId,
+                      })
+                    }
+                  />
+                )}
 
-            {currentTab === 'retail' && (
-              <RetailView
-                products={products}
-                settings={settings}
-                language={language}
-              />
-            )}
+                {tabKey === 'retail' && (
+                  <RetailView
+                    products={products}
+                    settings={settings}
+                    language={language}
+                  />
+                )}
 
-            {currentTab === 'products' && (
-              <ProductsView
-                products={products}
-                settings={settings}
-                language={language}
-                userRole={userRole}
-                categories={categories}
-                onOpenAddModal={() => {
-                  setEditingProduct(null);
-                  setIsProductModalOpen(true);
-                }}
-                onOpenEditModal={(product) => {
-                  setEditingProduct(product);
-                  setIsProductModalOpen(true);
-                }}
-                onDuplicateProduct={handleDuplicateProduct}
-                onDeleteProduct={handleDeleteProduct}
-                onToggleActive={handleToggleActive}
-                onOpenImportExport={() => setIsImportExportOpen(true)}
-              />
-            )}
+                {tabKey === 'products' && (
+                  <ProductsView
+                    products={products}
+                    settings={settings}
+                    language={language}
+                    userRole={userRole}
+                    categories={categories}
+                    onOpenAddModal={() => {
+                      setEditingProduct(null);
+                      setIsProductModalOpen(true);
+                    }}
+                    onOpenEditModal={(product) => {
+                      setEditingProduct(product);
+                      setIsProductModalOpen(true);
+                    }}
+                    onDuplicateProduct={handleDuplicateProduct}
+                    onDeleteProduct={handleDeleteProduct}
+                    onToggleActive={handleToggleActive}
+                    onOpenImportExport={() => setIsImportExportOpen(true)}
+                  />
+                )}
 
-            {currentTab === 'owner-desk' && (
-              <OwnerProfitDesk
-                products={products}
-                settings={settings}
-                language={language}
-                onUpdateProductPrices={handleUpdateProductPrices}
-                onToggleActive={handleToggleActive}
-              />
-            )}
-          </>
+                {tabKey === 'owner-desk' && (
+                  <OwnerProfitDesk
+                    products={products}
+                    settings={settings}
+                    language={language}
+                    onUpdateProductPrices={handleUpdateProductPrices}
+                    onToggleActive={handleToggleActive}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         )}
-        </div>
       </main>
 
       {/* Bottom Navigation Bar */}
@@ -922,35 +908,32 @@ export default function App() {
       {/* Android Back Button Exit Confirmation Warning Modal */}
       {isExitModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 text-center space-y-4 animate-in zoom-in-95">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center shadow-inner">
-              <AlertCircle className="w-7 h-7 text-amber-600" />
+          <div className="w-full max-w-xs bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 text-center space-y-4 animate-in zoom-in-95">
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-800 mx-auto flex items-center justify-center border border-teal-200">
+              <AlertCircle className="w-6 h-6 text-[#075e54]" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                Are you really exit?
+              <h3 className="text-base font-black text-slate-900 tracking-tight">
+                Do you really want to exit?
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Do you want to exit NEW ASHIQUE ENTERPRISE application?
+                Do you want to exit NEW ASHIQUE ENTERPRISE?
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
+            <div className="flex justify-between gap-2.5 pt-2">
               <button
                 onClick={() => setIsExitModalOpen(false)}
-                className="py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
+                className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition cursor-pointer"
               >
                 No
               </button>
               <button
                 onClick={() => {
                   setIsExitModalOpen(false);
-                  if (window.history.length > 2) {
-                    window.history.go(-2);
-                  } else {
-                    window.close();
-                  }
+                  window.close();
+                  window.location.href = 'about:blank';
                 }}
-                className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer"
+                className="flex-1 py-2.5 px-3 rounded-xl bg-[#075e54] hover:bg-[#064e46] text-white font-bold text-sm shadow-md transition cursor-pointer"
               >
                 Yes
               </button>
