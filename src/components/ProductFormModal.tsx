@@ -209,7 +209,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           {/* Row 2: Unit */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-              Unit
+              Unit of Measure
             </label>
             <select
               value={unit}
@@ -224,105 +224,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </select>
           </div>
 
-          {/* Row 3: Minimum Order Quantities & Cart Behavior */}
+          {/* Row 3: Prices in Indian Rupees (₹) */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <Boxes className="w-3.5 h-3.5 text-blue-700" />
-              <span>Order Quantities & Cart Add Behavior</span>
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Wholesale MOQ */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Wholesale Min Order (MOQ)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={wholesaleMoq}
-                  onChange={(e) => setWholesaleMoq(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                  placeholder="1"
-                />
-                <span className="text-[10px] text-slate-500">Min order in Wholesale catalog</span>
-              </div>
-
-              {/* Distributor MOQ */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Distributor Min Order (MOQ)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={distributorMoq}
-                  onChange={(e) => setDistributorMoq(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                  placeholder="10"
-                />
-                <span className="text-[10px] text-slate-500">Min order in Distributor catalog</span>
-              </div>
-
-              {/* First '+' Click Add Quantity */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  First Click Add Qty (+1st Click)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={initialAddQty}
-                  onChange={(e) => setInitialAddQty(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-blue-300 bg-blue-50/50 text-blue-900 text-sm font-black focus:ring-2 focus:ring-blue-500"
-                  placeholder="10"
-                />
-                <span className="text-[10px] text-blue-700 font-medium">
-                  Exact quantity added on first '+' click (e.g. 100)
-                </span>
-              </div>
-
-              {/* Subsequent Increment Step */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Next Click Step (+/-)
-                </label>
-                <div className="flex gap-1.5 items-center">
-                  <input
-                    type="number"
-                    min="1"
-                    value={qtyStep}
-                    onChange={(e) => setQtyStep(e.target.value)}
-                    className="w-20 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                    placeholder="1"
-                  />
-                  <div className="flex gap-1 flex-1 overflow-x-auto">
-                    {['1', '5', '10', '50'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setQtyStep(preset)}
-                        className={`px-2 py-1 text-xs font-bold rounded-lg border transition ${
-                          qtyStep === preset
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
-                        }`}
-                      >
-                        +{preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <span className="text-[10px] text-slate-500">Increments after initial add</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Row 4: Prices in Indian Rupees (₹) */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <DollarSign className="w-3.5 h-3.5 text-blue-700" />
-              <span>Prices in Indian Rupees (₹)</span>
+              <span>Price in Indian Rupees (₹)</span>
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

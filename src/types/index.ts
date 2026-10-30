@@ -63,6 +63,7 @@ export interface Quotation {
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
+  deliveryDate?: string;
   date: string;
   items: QuotationItem[];
   subtotal: number;

@@ -180,63 +180,32 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-6 pt-3 pb-28 space-y-4">
-      {/* Top Header Card */}
-      <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-200">
+      {/* Compact Top Navigation Bar */}
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+          <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="text-xs font-bold text-blue-900 hover:underline mb-2 block cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 transition cursor-pointer flex items-center gap-1.5"
             >
-              ← {language === 'bn' ? 'ড্যাশবোর্ডে ফিরুন' : 'Back to Dashboard'}
+              ← Back to Dashboard
             </button>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold mb-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'মালিক নিয়ন্ত্রণ ও ডিস্ট্রিবিউটর রেজিস্ট্রি' : 'Distributor Customer Registry'}</span>
-            </div>
-            <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
-              {language === 'bn' ? 'ডিস্ট্রিবিউটর কাস্টমার কন্ট্রোল ও অনুমোদন' : 'Distributor Customers & Access Control'}
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {language === 'bn'
-                ? 'একবার রিকোয়েস্ট করা ডিস্ট্রিবিউটরদের নাম স্থায়ীভাবে সেভ থাকে। যেকোনো ডিলারের জন্য ডিস্ট্রিবিউটর রেট চালু (অন) বা হাইড (অফ) করুন।'
-                : 'Permanent customer directory. Toggle distributor access ON or OFF for any individual customer anytime.'}
-            </p>
+            <span className="text-xs font-bold text-slate-400">|</span>
+            <span className="text-xs font-bold text-slate-600">
+              Customer Directory ({requests.length})
+            </span>
           </div>
 
           {/* Quick Actions: Global Hide / Unhide & Add Customer */}
           <div className="flex flex-wrap items-center gap-2">
 
-            {onToggleWholesaleHidden && (
-              <button
-                onClick={onToggleWholesaleHidden}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold shadow-xs transition cursor-pointer ${
-                  isWholesaleHidden
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    : 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-300'
-                }`}
-                title={isWholesaleHidden ? 'Show Wholesale on Dashboard' : 'Hide Wholesale on Dashboard'}
-              >
-                {isWholesaleHidden ? (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    <span>{language === 'bn' ? 'হোলসেল আনহাইড' : 'Unhide Wholesale'}</span>
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="w-4 h-4" />
-                    <span>{language === 'bn' ? 'হোলসেল হাইড' : 'Hide Wholesale'}</span>
-                  </>
-                )}
-              </button>
-            )}
 
             <button
               onClick={() => setIsAddCustomerOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-md shadow-blue-900/20 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-md shadow-blue-900/20 transition cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
-              <span>{language === 'bn' ? '+ কাস্টমার যোগ' : '+ Add Customer'}</span>
+              <span>+ Add Customer</span>
             </button>
           </div>
         </div>
@@ -246,9 +215,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
           <div className="mt-3.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-center gap-2">
             <EyeOff className="w-4 h-4 text-rose-700 flex-shrink-0" />
             <span>
-              {language === 'bn'
-                ? '⚠️ হোলসেল সেকশনটি বর্তমানে সাধারণ দর্শকদের ড্যাশবোর্ড থেকে গ্লোবালি হাইড (লুকানো) রয়েছে।'
-                : '⚠️ Wholesale is currently hidden globally from the public dashboard.'}
+              ⚠️ Wholesale is currently hidden globally from the public dashboard.
             </span>
           </div>
         )}
@@ -372,21 +339,21 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                       {isApproved && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>{language === 'bn' ? 'অ্যাক্টিভ' : 'Active'}</span>
+                          <span>Active</span>
                         </span>
                       )}
 
                       {isHidden && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-black border border-rose-300">
                           <EyeOff className="w-3 h-3 text-rose-600" />
-                          <span>{language === 'bn' ? 'ডিঅ্যাক্টিভ' : 'Deactive'}</span>
+                          <span>Deactive</span>
                         </span>
                       )}
 
                       {isPending && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black border border-amber-300">
                           <Clock className="w-3 h-3 text-amber-600" />
-                          <span>{language === 'bn' ? 'পেন্ডিং' : 'Pending'}</span>
+                          <span>Pending</span>
                         </span>
                       )}
                     </div>
@@ -412,7 +379,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                     </div>
 
                     <div className="text-[10px] text-slate-400">
-                      {language === 'bn' ? 'সংযুক্ত: ' : 'Registered: '}
+                      Registered:{' '}
                       {new Date(req.requestedAt).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
@@ -431,7 +398,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                         title="Click to deactivate wholesale access for this customer"
                       >
                         <EyeOff className="w-3.5 h-3.5 text-rose-600" />
-                        <span>{language === 'bn' ? 'ডিঅ্যাক্টিভ করুন' : 'Deactivate'}</span>
+                        <span>Deactivate</span>
                       </button>
                     )}
 
@@ -442,7 +409,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                         title="Click to activate wholesale access for this customer"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>{language === 'bn' ? 'অ্যাক্টিভ করুন' : 'Activate'}</span>
+                        <span>Activate</span>
                       </button>
                     )}
 
@@ -452,14 +419,14 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                           onClick={() => handleReject(req.id)}
                           className="py-2 px-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold cursor-pointer"
                         >
-                          {language === 'bn' ? 'বাতিল' : 'Reject'}
+                          Reject
                         </button>
                         <button
                           onClick={() => handleApprove(req)}
                           className="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition cursor-pointer flex items-center gap-1"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>{language === 'bn' ? 'অনুমোদন দিন' : 'Approve'}</span>
+                          <span>Approve</span>
                         </button>
                       </>
                     )}
@@ -471,7 +438,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                       title="Send WhatsApp confirmation with personal unlock link"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{language === 'bn' ? 'হোয়াটসঅ্যাপ' : 'WhatsApp'}</span>
+                      <span className="hidden sm:inline">WhatsApp</span>
                     </button>
 
                     {/* 3. Copy Personalized Direct Unlock Link */}
@@ -483,12 +450,12 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                       {copiedLinkFor === req.id ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="hidden sm:inline text-emerald-700">{language === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
+                          <span className="hidden sm:inline text-emerald-700">Copied</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">{language === 'bn' ? 'লিংক' : 'Link'}</span>
+                          <span className="hidden sm:inline">Link</span>
                         </>
                       )}
                     </button>
@@ -539,9 +506,7 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
 
             <form onSubmit={handleAddCustomerSubmit} className="p-4 sm:p-6 space-y-3.5">
               <p className="text-xs text-slate-500">
-                {language === 'bn'
-                  ? 'এখানে সরাসরি কাস্টমার যোগ করলে তাকে স্বয়ংক্রিয়ভাবে হোলসেল রেট দেখার অনুমোদন দেওয়া হবে।'
-                  : 'Adding a customer directly will automatically grant them wholesale viewing access.'}
+                Adding a customer directly will automatically grant them wholesale viewing access.
               </p>
 
               {addError && (
@@ -552,21 +517,21 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  {language === 'bn' ? 'কাস্টমারের নাম / দোকানের নাম *' : 'Customer / Shop Name *'}
+                  Customer / Shop Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  placeholder={language === 'bn' ? 'যেমন: ভাই ভাই এন্টারপ্রাইজ' : 'e.g. Bhai Bhai Enterprise'}
+                  placeholder="e.g. Bhai Bhai Enterprise"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-semibold"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  {language === 'bn' ? 'মোবাইল নম্বর *' : 'Mobile Number *'}
+                  Mobile Number *
                 </label>
                 <input
                   type="tel"
@@ -580,26 +545,26 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  {language === 'bn' ? 'ঠিকানা / এলাকা (ঐচ্ছিক)' : 'Address / Area (Optional)'}
+                  Address / Area (Optional)
                 </label>
                 <input
                   type="text"
                   value={newCustAddress}
                   onChange={(e) => setNewCustAddress(e.target.value)}
-                  placeholder={language === 'bn' ? 'যেমন: কালিয়াচক চক' : 'e.g. Kaliachak'}
+                  placeholder="e.g. Kaliachak"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  {language === 'bn' ? 'নোট / বিবরণ (ঐচ্ছিক)' : 'Notes / Remarks (Optional)'}
+                  Notes / Remarks (Optional)
                 </label>
                 <input
                   type="text"
                   value={newCustNotes}
                   onChange={(e) => setNewCustNotes(e.target.value)}
-                  placeholder={language === 'bn' ? 'যেমন: কমার্শিয়াল আরও পার্টস বায়ার' : 'e.g. Regular RO dealer'}
+                  placeholder="e.g. Regular RO dealer"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
                 />
               </div>
@@ -610,14 +575,14 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                   onClick={() => setIsAddCustomerOpen(false)}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer"
                 >
-                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="flex-2 py-2.5 px-4 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-extrabold text-xs sm:text-sm shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{language === 'bn' ? 'কাস্টমার সংরক্ষণ করুন' : 'Save Customer'}</span>
+                  <span>Save Customer</span>
                 </button>
               </div>
             </form>
@@ -634,18 +599,10 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900">
-                {language === 'bn' ? 'কাস্টমার মুছে ফেলতে চান?' : 'Delete Customer?'}
+                Delete Customer?
               </h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                {language === 'bn' ? (
-                  <>
-                    আপনি কি নিশ্চিত যে <strong>"{confirmDelete.name}"</strong>-কে তালিকা থেকে মুছে ফেলতে চান? মুছে ফেললে তার হোলসেল এক্সেস বন্ধ হয়ে যাবে এবং দেখতে হলে তাকে পুনরায় রিকোয়েস্ট পাঠাতে হবে।
-                  </>
-                ) : (
-                  <>
-                    Are you sure you want to permanently delete <strong>"{confirmDelete.name}"</strong>? Their wholesale access will be revoked immediately.
-                  </>
-                )}
+                Are you sure you want to permanently delete <strong>"{confirmDelete.name}"</strong>? Their wholesale access will be revoked immediately.
               </p>
             </div>
             <div className="flex items-center gap-2 pt-1">
@@ -653,14 +610,14 @@ export const WholesaleApprovalsView: React.FC<WholesaleApprovalsViewProps> = ({
                 onClick={() => setConfirmDelete(null)}
                 className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer"
               >
-                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                Cancel
               </button>
               <button
                 onClick={handleConfirmDeleteExecute}
                 className="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{language === 'bn' ? 'মুছে ফেলুন' : 'Delete'}</span>
+                <span>Delete</span>
               </button>
             </div>
           </div>

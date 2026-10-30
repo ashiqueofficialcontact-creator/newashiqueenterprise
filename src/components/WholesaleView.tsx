@@ -214,7 +214,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
     const clean = normalizePhone(lookupInput);
     if (!clean || clean.length < 10) {
       setLookupMessage({
-        text: language === 'bn' ? 'সঠিক ১০ সংখ্যার মোবাইল নম্বর দিন।' : 'Enter a valid 10-digit mobile number.',
+        text: 'Enter a valid 10-digit mobile number.',
         type: 'error',
       });
       return;
@@ -223,9 +223,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
     const found = getCustomerWholesaleStatus(clean);
     if (!found) {
       setLookupMessage({
-        text: language === 'bn'
-          ? 'এই নম্বরে কোনো অনুমোদন রেকর্ড পাওয়া যায়নি। নিচে রিকোয়েস্ট পাঠান।'
-          : 'No record found for this number. Please submit a request.',
+        text: 'No record found for this number. Please submit an access request.',
         type: 'error',
       });
       return;
@@ -238,19 +236,17 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
     if (found.status === 'approved') {
       onApproveWholesale();
       setLookupMessage({
-        text: language === 'bn' ? '✓ অভিনন্দন! আপনার হোলসেল রেট আনলক হয়েছে।' : '✓ Wholesale rates unlocked.',
+        text: '✓ Access confirmed! Distributor rates unlocked.',
         type: 'success',
       });
     } else if (found.status === 'hidden') {
       setLookupMessage({
-        text: language === 'bn'
-          ? 'আপনার অ্যাকাউন্টে হোলসেল রেট সাময়িক বন্ধ রাখা আছে। শপ মালিকের সাথে যোগাযোগ করুন।'
-          : 'Your wholesale access is currently paused by the shop.',
+        text: 'Your distributor access is currently paused by the shop. Please contact the owner.',
         type: 'info',
       });
     } else {
       setLookupMessage({
-        text: language === 'bn' ? 'আপনার অনুরোধটি মালিকের অনুমোদনের অপেক্ষায় আছে।' : 'Request pending approval.',
+        text: 'Your request is pending owner approval. It will unlock once approved.',
         type: 'info',
       });
     }
@@ -572,36 +568,9 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
       <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold">
-                <Boxes className="w-3.5 h-3.5" />
-                <span>Distributor Trade Catalog</span>
-              </span>
-
-              {/* Owner Hide / Unhide Toggle Button */}
-              {isOwner && onToggleWholesaleHidden && (
-                <button
-                  onClick={onToggleWholesaleHidden}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition cursor-pointer shadow-xs ${
-                    isWholesaleHidden
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
-                      : 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200'
-                  }`}
-                  title={isWholesaleHidden ? 'Click to make Distributor visible' : 'Click to hide Distributor from visitors'}
-                >
-                  {isWholesaleHidden ? (
-                    <>
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Unhide Distributor</span>
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff className="w-3.5 h-3.5" />
-                      <span>Hide Distributor</span>
-                    </>
-                  )}
-                </button>
-              )}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold mb-1.5">
+              <Boxes className="w-3.5 h-3.5" />
+              <span>Distributor Catalog & Rates</span>
             </div>
 
             <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight uppercase">
@@ -676,8 +645,7 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
                 <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider">
                   <th className="py-3.5 px-5 font-semibold w-12 text-center">#</th>
                   <th className="py-3.5 px-5 font-semibold">Product Name</th>
-                  <th className="py-3.5 px-5 font-semibold text-center w-48">Minimum Order (MOQ)</th>
-                  <th className="py-3.5 px-5 font-semibold text-right w-44">Distributor Rate (₹)</th>
+                  <th className="py-3.5 px-5 font-semibold text-right w-48">Distributor Rate (₹)</th>
                   <th className="py-3.5 px-5 font-semibold text-center w-28">Unit</th>
                 </tr>
               </thead>
@@ -697,11 +665,6 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
                         </div>
                       )}
                     </td>
-                    <td className="py-3.5 px-5 text-center">
-                      <span className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
-                        Min {product.distributorMoq || product.moq || 1} {product.unit}s
-                      </span>
-                    </td>
                     <td className="py-3.5 px-5 text-right">
                       <div className="text-base font-black text-blue-900">
                         ₹{formatINRNumber(product.wholesalePrice, settings.decimalPlaces)}
@@ -716,87 +679,32 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
             </table>
           </div>
 
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
+          {/* Mobile & Tablet Product Cards: Item Name on Left, Distributor Rate on Right */}
+          <div className="md:hidden space-y-2.5">
             {filteredProducts.map((product) => {
-              const qty = wholesaleOrder[product.id] || 0;
-              const isSelected = qty > 0;
-
               return (
                 <div
                   key={product.id}
-                  className={`bg-white rounded-3xl p-4 sm:p-5 shadow-xs border transition-all ${
-                    isSelected ? 'border-blue-500 ring-2 ring-blue-500/15' : 'border-slate-200'
-                  }`}
+                  className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200 hover:border-blue-300 transition-all flex items-center justify-between gap-3"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <h4 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">
-                        {product.name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] text-slate-500 font-medium">
-                          {language === 'bn' ? 'প্রতি' : 'per'} {product.unit}
-                        </span>
-                        {product.qtyStep && product.qtyStep > 1 ? (
-                          <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-1.5 py-0.5 rounded-md border border-blue-200">
-                            ধাপ: +{product.qtyStep}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* Quantity Picker for Bulk Order */}
-                    <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-2xl border border-slate-200 flex-shrink-0">
-                      <button
-                        onClick={() => handleWholesaleQty(product, -1)}
-                        disabled={qty === 0}
-                        className="w-7 h-7 rounded-xl bg-white hover:bg-slate-200 text-slate-700 disabled:opacity-30 disabled:hover:bg-white flex items-center justify-center font-bold text-xs shadow-2xs cursor-pointer"
-                        title="Decrease"
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        min="0"
-                        value={qty === 0 ? '' : qty}
-                        placeholder="0"
-                        onChange={(e) => handleDirectWholesaleQty(product.id, e.target.value)}
-                        className="w-14 text-center font-bold text-xs text-slate-900 font-mono bg-white rounded-lg border border-slate-200 py-1 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                      />
-                      <button
-                        onClick={() => handleWholesaleQty(product, 1)}
-                        className="w-7 h-7 rounded-xl bg-blue-900 hover:bg-blue-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs cursor-pointer"
-                        title={qty === 0 ? `Add ${product.initialAddQty || product.distributorMoq || product.moq || 1}` : `Add ${product.qtyStep || 1}`}
-                      >
-                        +
-                      </button>
-                    </div>
+                  {/* Item Name on Left */}
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h4 className="font-black text-slate-900 text-base leading-snug tracking-tight">
+                      {product.name}
+                    </h4>
+                    <span className="text-xs text-slate-500 font-medium">
+                      Unit: {product.unit}
+                    </span>
                   </div>
 
-                  {/* Clean Divider Line Between Name and Price */}
-                  <div className="border-t border-slate-200/90 my-3"></div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] text-slate-500 block">
-                        Minimum Order (MOQ)
-                      </span>
-                      <span className="font-bold text-xs text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 inline-block">
-                        Min {product.distributorMoq || product.moq || 1} {product.unit}s
-                      </span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-[11px] text-slate-500 block">
-                        Distributor Rate
-                      </span>
-                      <div className="text-base sm:text-lg font-black text-blue-900 font-mono">
-                        ₹{formatINRNumber(product.wholesalePrice, settings.decimalPlaces)}
-                        <span className="text-[11px] font-normal text-slate-500 ml-1">
-                          / {product.unit}
-                        </span>
-                      </div>
+                  {/* Distributor Rate on Right */}
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Distributor Rate
+                    </span>
+                    <div className="text-lg sm:text-2xl font-black text-blue-900 font-mono">
+                      ₹{formatINRNumber(product.wholesalePrice, settings.decimalPlaces)}
+                      <span className="text-xs font-semibold text-slate-500 ml-1">/ {product.unit}</span>
                     </div>
                   </div>
                 </div>
@@ -804,30 +712,6 @@ export const WholesaleView: React.FC<WholesaleViewProps> = ({
             })}
           </div>
         </>
-      )}
-
-      {/* Floating Wholesale Order Cart Bar */}
-      {selectedWholesaleCount > 0 && (
-        <div className="fixed bottom-24 sm:bottom-28 left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[480px] sm:left-1/2 sm:-translate-x-1/2 z-40 animate-in slide-in-from-bottom duration-200">
-          <div className="bg-slate-950 text-white p-3.5 rounded-3xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[11px] text-cyan-400 font-bold">
-                {selectedWholesaleCount} items selected in distributor order
-              </div>
-              <div className="text-base sm:text-lg font-black text-white font-mono">
-                ₹{formatINRNumber(totalWholesaleAmount, settings.decimalPlaces)}
-              </div>
-            </div>
-
-            <button
-              onClick={handleSendWholesaleOrderWhatsApp}
-              className="py-2.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Order via WhatsApp</span>
-            </button>
-          </div>
-        </div>
       )}
 
       {/* PDF Download Options Modal */}

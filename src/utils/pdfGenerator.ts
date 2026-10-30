@@ -189,10 +189,13 @@ export function generateQuotationPDF(quotation: Quotation, settings: BusinessSet
   doc.setFont('helvetica', 'bold');
   doc.text('Customer Details:', pageWidth / 2, 43);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Name: ${quotation.customerName || 'Valued Customer'}`, pageWidth / 2, 50);
-  doc.text(`Phone: ${quotation.customerPhone || 'N/A'}`, pageWidth / 2, 56);
+  doc.text(`Name: ${quotation.customerName || 'Valued Customer'}`, pageWidth / 2, 49);
+  doc.text(`Phone: ${quotation.customerPhone || 'N/A'}`, pageWidth / 2, 54);
+  if (quotation.deliveryDate) {
+    doc.text(`Delivery Date: ${quotation.deliveryDate}`, pageWidth / 2, 59);
+  }
   if (quotation.customerAddress) {
-    doc.text(`Address: ${quotation.customerAddress}`, pageWidth / 2, 60);
+    doc.text(`Address: ${quotation.customerAddress}`, pageWidth / 2, quotation.deliveryDate ? 64 : 59);
   }
 
   // Items table

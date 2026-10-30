@@ -83,6 +83,7 @@ export default function App() {
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [approvalModalData, setApprovalModalData] = useState<{
     isOpen: boolean;
     customerName: string;
@@ -94,6 +95,31 @@ export default function App() {
     customerPhone: '',
   });
 
+  // Navigation History Stack for Android Back Button
+  const historyStackRef = useRef<Array<{ tab: ViewTab; subView: MoreSubView }>>([
+    { tab: 'home', subView: 'none' },
+  ]);
+
+  // Keep refs in sync for event listeners
+  const currentTabRef = useRef(currentTab);
+  currentTabRef.current = currentTab;
+  const activeSubViewRef = useRef(activeSubView);
+  activeSubViewRef.current = activeSubView;
+  const isExitModalOpenRef = useRef(isExitModalOpen);
+  isExitModalOpenRef.current = isExitModalOpen;
+  const isProductModalOpenRef = useRef(isProductModalOpen);
+  isProductModalOpenRef.current = isProductModalOpen;
+  const isImportExportOpenRef = useRef(isImportExportOpen);
+  isImportExportOpenRef.current = isImportExportOpen;
+  const isQuotationOpenRef = useRef(isQuotationOpen);
+  isQuotationOpenRef.current = isQuotationOpen;
+  const isPinModalOpenRef = useRef(isPinModalOpen);
+  isPinModalOpenRef.current = isPinModalOpen;
+  const isHelpOpenRef = useRef(isHelpOpen);
+  isHelpOpenRef.current = isHelpOpen;
+  const approvalModalDataRef = useRef(approvalModalData);
+  approvalModalDataRef.current = approvalModalData;
+
   const [wholesaleRequests, setWholesaleRequests] = useState<WholesaleRequest[]>(() =>
     loadWholesaleRequests()
   );
@@ -101,10 +127,161 @@ export default function App() {
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Tab horizontal slide transition direction
+  const [slideDirection, setSlideDirection] = useState<'forward' | 'backward' | 'none'>('none');
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  // Navigators that track history & slide direction
+  const handleTabChange = (newTab: ViewTab, overrideDirection?: 'forward' | 'backward') => {
+    if (currentTab !== newTab || activeSubView !== 'none') {
+      const visibleTabs: ViewTab[] =
+        userRole === 'owner'
+          ? ['home', 'wholesale', 'retail', 'products', 'owner-desk']
+          : isWholesaleHidden
+          ? ['home', 'retail']
+          : ['home', 'wholesale', 'retail'];
+      const oldIdx = visibleTabs.indexOf(currentTab);
+      const newIdx = visibleTabs.indexOf(newTab);
+
+      if (overrideDirection) {
+        setSlideDirection(overrideDirection);
+      } else if (newIdx > oldIdx) {
+        setSlideDirection('forward');
+      } else if (newIdx < oldIdx) {
+        setSlideDirection('backward');
+      }
+
+      historyStackRef.current.push({ tab: newTab, subView: 'none' });
+      try {
+        window.history.pushState({ naeApp: true }, '');
+      } catch (e) {}
+      setCurrentTab(newTab);
+      setActiveSubView('none');
+    }
+  };
+
+  // 1. Hardware / Browser Back button handling & Exit Confirmation
+  useEffect(() => {
+    try {
+      window.history.replaceState({ naeApp: true }, '');
+      window.history.pushState({ naeApp: true }, '');
+    } catch (e) {}
+
+    const onPopState = () => {
+      // A. If Exit Confirmation is open, close it on back
+      if (isExitModalOpenRef.current) {
+        setIsExitModalOpen(false);
+        try {
+          window.history.pushState({ naeApp: true }, '');
+        } catch (e) {}
+        return;
+      }
+
+      // B. If any modal is open, close modal
+      if (isProductModalOpenRef.current) {
+        setIsProductModalOpen(false);
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+      if (isImportExportOpenRef.current) {
+        setIsImportExportOpen(false);
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+      if (isQuotationOpenRef.current) {
+        setIsQuotationOpen(false);
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+      if (isPinModalOpenRef.current) {
+        setIsPinModalOpen(false);
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+      if (isHelpOpenRef.current) {
+        setIsHelpOpen(false);
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+      if (approvalModalDataRef.current.isOpen) {
+        setApprovalModalData((prev) => ({ ...prev, isOpen: false }));
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+
+      // C. If active sub-view is open (like distributor approvals, reports, etc.), go back to previous tab
+      if (activeSubViewRef.current !== 'none') {
+        setActiveSubView('none');
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+
+      // D. If not on Home screen, go back to previous screen or directly to Home
+      if (currentTabRef.current !== 'home') {
+        if (historyStackRef.current.length > 1) {
+          historyStackRef.current.pop();
+          const prev = historyStackRef.current[historyStackRef.current.length - 1];
+          if (prev) {
+            setCurrentTab(prev.tab);
+            setActiveSubView(prev.subView || 'none');
+          } else {
+            setCurrentTab('home');
+            setActiveSubView('none');
+          }
+        } else {
+          setCurrentTab('home');
+          setActiveSubView('none');
+        }
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+        return;
+      }
+
+      // E. On Home screen with no modals: Show Exit Confirmation Warning
+      setIsExitModalOpen(true);
+      try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // 2. Prevent pull-to-refresh on mobile devices when swiping down from the top
+  useEffect(() => {
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touchCurrentY = e.touches[0].clientY;
+        const currentScrollTop =
+          window.scrollY ||
+          document.documentElement.scrollTop ||
+          document.body.scrollTop ||
+          0;
+        // If scrolled to top and pulling downward, cancel pull-to-refresh
+        if (currentScrollTop <= 0 && touchCurrentY > touchStartY) {
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
 
   // Persist language and role changes
   useEffect(() => {
@@ -143,7 +320,6 @@ export default function App() {
       const wholesaleParam = params.get('wholesale');
 
       if (action === 'approve_wholesale') {
-        // Ensure request is registered in the owner's database with customer details
         if (reqPhone && reqName) {
           addWholesaleRequest({
             customerName: reqName,
@@ -167,7 +343,7 @@ export default function App() {
         setIsWholesaleApproved(true);
         saveWholesaleApproval(true);
         setCurrentTab('wholesale');
-        showToast(language === 'bn' ? 'হোলসেল রেট আনলক হয়েছে।' : 'Wholesale rates unlocked.');
+        showToast('Wholesale rates unlocked.');
       }
     } catch (e) {
       console.error('URL parse error:', e);
@@ -201,8 +377,8 @@ export default function App() {
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // Responsive swipe distance threshold (40px) and horizontal dominance check
-    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15) {
+    // Responsive swipe distance threshold (32px) and horizontal dominance check
+    if (Math.abs(deltaX) < 32 || Math.abs(deltaX) < Math.abs(deltaY) * 1.05) {
       return;
     }
 
@@ -219,12 +395,12 @@ export default function App() {
     if (deltaX < 0) {
       // Swiped Left (finger moves right to left) -> Advance to next tab
       if (currentIndex < visibleTabs.length - 1) {
-        setCurrentTab(visibleTabs[currentIndex + 1]);
+        handleTabChange(visibleTabs[currentIndex + 1], 'forward');
       }
     } else {
       // Swiped Right (finger moves left to right) -> Go back to previous tab
       if (currentIndex > 0) {
-        setCurrentTab(visibleTabs[currentIndex - 1]);
+        handleTabChange(visibleTabs[currentIndex - 1], 'backward');
       }
     }
   };
@@ -233,9 +409,8 @@ export default function App() {
   const handleToggleRole = () => {
     if (userRole === 'owner') {
       setUserRole('customer');
-      setCurrentTab('home');
-      setActiveSubView('none');
-      showToast(language === 'bn' ? 'গেস্ট মোড চালু হয়েছে।' : 'Switched to Guest View.');
+      handleTabChange('home');
+      showToast('Switched to Guest View.');
     } else {
       setIsPinModalOpen(true);
     }
@@ -244,9 +419,8 @@ export default function App() {
   const handlePinSuccess = () => {
     setUserRole('owner');
     setIsPinModalOpen(false);
-    setCurrentTab('home');
-    setActiveSubView('none');
-    showToast(language === 'bn' ? 'ওনার মোড আনলক হয়েছে।' : 'Unlocked Owner Mode.');
+    handleTabChange('home');
+    showToast('Unlocked Owner Mode.');
   };
 
   const handleApproveWholesale = () => {
@@ -254,13 +428,13 @@ export default function App() {
     saveWholesaleApproval(true);
     setHasWholesaleRequest(false);
     setWholesaleRequests(loadWholesaleRequests());
-    showToast(language === 'bn' ? 'হোলসেল রেট দেখতে অনুমোদন দেওয়া হয়েছে!' : 'Wholesale access approved!');
+    showToast('Wholesale access approved!');
   };
 
   const handleRevokeWholesale = () => {
     setIsWholesaleApproved(false);
     saveWholesaleApproval(false);
-    showToast(language === 'bn' ? 'হোলসেল রেট আবার হাইড করা হয়েছে।' : 'Wholesale access hidden.');
+    showToast('Wholesale access hidden.');
   };
 
   const handleToggleWholesaleHidden = () => {
@@ -268,11 +442,7 @@ export default function App() {
     setIsWholesaleHidden(nextVal);
     saveWholesaleHidden(nextVal);
     showToast(
-      language === 'bn'
-        ? nextVal
-          ? 'হোলসেল অপশন ড্যাশবোর্ড থেকে হাইড করা হয়েছে (কাস্টমাররা দেখতে পাবে না)।'
-          : 'হোলসেল অপশন আবার ড্যাশবোর্ডে দৃশ্যমান করা হয়েছে।'
-        : nextVal
+      nextVal
         ? 'Wholesale hidden from Dashboard (invisible to visitors).'
         : 'Wholesale is now visible on Dashboard.'
     );
@@ -281,7 +451,7 @@ export default function App() {
   const handleRequestWholesale = () => {
     setHasWholesaleRequest(true);
     setWholesaleRequests(loadWholesaleRequests());
-    showToast(language === 'bn' ? 'অনুমোদনের অনুরোধ পাঠানো হয়েছে।' : 'Wholesale access request sent.');
+    showToast('Wholesale access request sent.');
   };
 
 
@@ -357,11 +527,7 @@ export default function App() {
     setProducts(updatedList);
     saveProducts(updatedList);
     showToast(
-      language === 'bn'
-        ? willBeActive
-          ? '✓ স্টকে আছে: হোলসেল ও রিটেল উভয় লিস্টে লাইভ হয়েছে।'
-          : '✕ স্টক নাই: হোলসেল ও রিটেল উভয় লিস্ট থেকে হাইড করা হয়েছে।'
-        : willBeActive
+      willBeActive
         ? '✓ In Stock: Now Live in Wholesale & Retail.'
         : '✕ Out of Stock: Hidden from Wholesale & Retail.'
     );
@@ -441,6 +607,11 @@ export default function App() {
 
   // Handle More subview actions
   const handleSelectMoreAction = (action: MoreSubView) => {
+    historyStackRef.current.push({ tab: currentTab, subView: action });
+    try {
+      window.history.pushState({ naeApp: true }, '');
+    } catch (e) {}
+
     switch (action) {
       case 'add-product':
         setEditingProduct(null);
@@ -497,10 +668,20 @@ export default function App() {
 
       {/* Main Content Area (With smooth horizontal swipe gestures between tabs and elevated clearance) */}
       <main 
-        className="flex-1 pb-44 sm:pb-48 touch-pan-y"
+        className="flex-1 pb-44 sm:pb-48 touch-pan-y overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        <div
+          key={`${currentTab}_${activeSubView}`}
+          className={
+            slideDirection === 'forward'
+              ? 'tab-slide-forward'
+              : slideDirection === 'backward'
+              ? 'tab-slide-backward'
+              : ''
+          }
+        >
         {/* If a subview from More is active (e.g. Reports or Settings) */}
         {activeSubView === 'reports' ? (
           <div className="pt-2">
@@ -564,10 +745,7 @@ export default function App() {
                 settings={settings}
                 language={language}
                 userRole={userRole}
-                onNavigate={(tab) => {
-                  setActiveSubView('none');
-                  setCurrentTab(tab);
-                }}
+                onNavigate={handleTabChange}
                 onOpenAddProduct={() => {
                   setEditingProduct(null);
                   setIsProductModalOpen(true);
@@ -654,15 +832,13 @@ export default function App() {
             )}
           </>
         )}
+        </div>
       </main>
 
       {/* Bottom Navigation Bar */}
       <BottomNav
         currentTab={currentTab}
-        onTabChange={(tab) => {
-          setActiveSubView('none');
-          setCurrentTab(tab);
-        }}
+        onTabChange={handleTabChange}
         language={language}
         userRole={userRole}
         isWholesaleHidden={isWholesaleHidden}
@@ -742,6 +918,46 @@ export default function App() {
           setWholesaleRequests(loadWholesaleRequests());
         }}
       />
+
+      {/* Android Back Button Exit Confirmation Warning Modal */}
+      {isExitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 text-center space-y-4 animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center shadow-inner">
+              <AlertCircle className="w-7 h-7 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                Are you really exit?
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Do you want to exit NEW ASHIQUE ENTERPRISE application?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <button
+                onClick={() => setIsExitModalOpen(false)}
+                className="py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                No
+              </button>
+              <button
+                onClick={() => {
+                  setIsExitModalOpen(false);
+                  if (window.history.length > 2) {
+                    window.history.go(-2);
+                  } else {
+                    window.close();
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

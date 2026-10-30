@@ -44,8 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
       `💧 *${settings.businessName}*\n` +
       `ISO Quality RO Water Purifier & Commercial Plants\n` +
       `📍 ${settings.address}\n` +
-      `📞 যোগাযোগ / WhatsApp: ${settings.phone}\n` +
-      `ডিস্ট্রিবিউটর ও হোলসেল RO স্পেয়ার পার্টস সুলভ মূল্যে পাওয়া যায়।`;
+      `📞 Contact / WhatsApp: ${settings.phone}\n` +
+      `Distributor & Wholesale RO Spare Parts available at best trade rates.`;
 
     if (navigator.share) {
       try {
@@ -90,11 +90,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Line 1: Business Brand Title + Single Unified Mode Switcher at Top-Right */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg p-2 flex-shrink-0 border border-cyan-400/50 shadow-cyan-500/20">
-              <Droplet className="w-6 h-6 text-white fill-white" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg p-2 flex-shrink-0 border border-cyan-400/50 shadow-cyan-500/25">
+              <Droplet className="w-6 h-6 sm:w-7 sm:h-7 text-white fill-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="title-3d-text text-sm sm:text-lg font-black tracking-wider uppercase leading-tight">
+              <h1 className="shop-title-glow text-base sm:text-xl md:text-2xl font-black tracking-wide uppercase leading-tight">
                 {settings.businessName}
               </h1>
             </div>
