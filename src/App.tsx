@@ -5,37 +5,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  BusinessSettings, 
-  Language, 
-  MoreSubView, 
-  Product, 
-  Quotation, 
-  UserRole, 
-  ViewTab,
-  WholesaleRequest 
+  BusinessSettings, Language, MoreSubView, Product, Quotation, UserRole, ViewTab, WholesaleRequest 
 } from './types';
 import { 
-  DEFAULT_SETTINGS, 
-  SAMPLE_PRODUCTS, 
-  calculateProfit, 
-  loadCategories, 
-  loadProducts, 
-  loadQuotations, 
-  loadSettings,
-  loadWholesaleApproval,
-  loadWholesaleHidden,
-  loadWholesaleRequests,
-  saveCategory, 
-  saveProducts, 
-  saveQuotations, 
-  saveSettings,
-  saveWholesaleApproval,
-  saveWholesaleHidden,
-  saveCurrentCustomerPhone,
-  saveCurrentCustomerName,
-  getCustomerWholesaleStatus,
-  addWholesaleRequest,
-  normalizePhone
+  DEFAULT_SETTINGS, SAMPLE_PRODUCTS, calculateProfit, loadCategories, loadProducts, loadQuotations, loadSettings,
+  loadWholesaleApproval, loadWholesaleHidden, loadWholesaleRequests, saveCategory, saveProducts, saveQuotations, 
+  saveSettings, saveWholesaleApproval, saveWholesaleHidden, saveCurrentCustomerPhone, saveCurrentCustomerName,
+  getCustomerWholesaleStatus, addWholesaleRequest, normalizePhone
 } from './utils/storage';
 import { Header } from './components/Header';
 import { CustomerViewBanner } from './components/CustomerViewBanner';
@@ -56,27 +32,37 @@ import { WholesaleApprovalModal } from './components/WholesaleApprovalModal';
 import { WholesaleApprovalsView } from './components/WholesaleApprovalsView';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
+// ফায়ারবেস সেটআপ
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, onValue, update } from "firebase/database";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCTOpPb5ezcWsKaH7g5LF6DVJ2agwuVW2o",
+  authDomain: "new-ashique-enterprise.firebaseapp.com",
+  projectId: "new-ashique-enterprise",
+  storageBucket: "new-ashique-enterprise.firebasestorage.app",
+  messagingSenderId: "90702515820",
+  appId: "1:90702515820:web:62c1e1b129c7e3a338d249",
+  databaseURL: "https://new-ashique-enterprise-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 export default function App() {
-  // Primary application data state
   const [products, setProducts] = useState<Product[]>(() => loadProducts());
   const [settings, setSettings] = useState<BusinessSettings>(() => loadSettings());
   const [quotations, setQuotations] = useState<Quotation[]>(() => loadQuotations());
   const [categories, setCategories] = useState<string[]>(() => loadCategories());
 
-  // Preferences & active view state
   const [language, setLanguage] = useState<Language>(() => {
     return (localStorage.getItem('nae_language_choice_v1') as Language) || settings.defaultLanguage || 'en';
   });
 
-  // App must always launch in 'customer' (Guest View) mode by default
   const [userRole, setUserRole] = useState<UserRole>('customer');
-
   const [currentTab, setCurrentTab] = useState<ViewTab>('home');
-
-  // Sub-view overlays from "More" menu
   const [activeSubView, setActiveSubView] = useState<MoreSubView>('none');
 
-  // Modals
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
@@ -85,46 +71,22 @@ export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [approvalModalData, setApprovalModalData] = useState<{
-    isOpen: boolean;
-    customerName: string;
-    customerPhone: string;
-    requestId?: string;
-  }>({
-    isOpen: false,
-    customerName: '',
-    customerPhone: '',
-  });
+    isOpen: boolean; customerName: string; customerPhone: string; requestId?: string;
+  }>({ isOpen: false, customerName: '', customerPhone: '' });
 
-  // Navigation History Stack for Android Back Button
-  const historyStackRef = useRef<Array<{ tab: ViewTab; subView: MoreSubView }>>([
-    { tab: 'home', subView: 'none' },
-  ]);
+  const historyStackRef = useRef<Array<{ tab: ViewTab; subView: MoreSubView }>>([{ tab: 'home', subView: 'none' }]);
 
-  // Keep refs in sync for event listeners
-  const currentTabRef = useRef(currentTab);
-  currentTabRef.current = currentTab;
-  const activeSubViewRef = useRef(activeSubView);
-  activeSubViewRef.current = activeSubView;
-  const isExitModalOpenRef = useRef(isExitModalOpen);
-  isExitModalOpenRef.current = isExitModalOpen;
-  const isProductModalOpenRef = useRef(isProductModalOpen);
-  isProductModalOpenRef.current = isProductModalOpen;
-  const isImportExportOpenRef = useRef(isImportExportOpen);
-  isImportExportOpenRef.current = isImportExportOpen;
-  const isQuotationOpenRef = useRef(isQuotationOpen);
-  isQuotationOpenRef.current = isQuotationOpen;
-  const isPinModalOpenRef = useRef(isPinModalOpen);
-  isPinModalOpenRef.current = isPinModalOpen;
-  const isHelpOpenRef = useRef(isHelpOpen);
-  isHelpOpenRef.current = isHelpOpen;
-  const approvalModalDataRef = useRef(approvalModalData);
-  approvalModalDataRef.current = approvalModalData;
+  const currentTabRef = useRef(currentTab); currentTabRef.current = currentTab;
+  const activeSubViewRef = useRef(activeSubView); activeSubViewRef.current = activeSubView;
+  const isExitModalOpenRef = useRef(isExitModalOpen); isExitModalOpenRef.current = isExitModalOpen;
+  const isProductModalOpenRef = useRef(isProductModalOpen); isProductModalOpenRef.current = isProductModalOpen;
+  const isImportExportOpenRef = useRef(isImportExportOpen); isImportExportOpenRef.current = isImportExportOpen;
+  const isQuotationOpenRef = useRef(isQuotationOpen); isQuotationOpenRef.current = isQuotationOpen;
+  const isPinModalOpenRef = useRef(isPinModalOpen); isPinModalOpenRef.current = isPinModalOpen;
+  const isHelpOpenRef = useRef(isHelpOpen); isHelpOpenRef.current = isHelpOpen;
+  const approvalModalDataRef = useRef(approvalModalData); approvalModalDataRef.current = approvalModalData;
 
-  const [wholesaleRequests, setWholesaleRequests] = useState<WholesaleRequest[]>(() =>
-    loadWholesaleRequests()
-  );
-
-  // Toast feedback
+  const [wholesaleRequests, setWholesaleRequests] = useState<WholesaleRequest[]>(() => loadWholesaleRequests());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -132,95 +94,42 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Navigators that track history
   const handleTabChange = (newTab: ViewTab) => {
     if (currentTab !== newTab || activeSubView !== 'none') {
       historyStackRef.current.push({ tab: newTab, subView: 'none' });
-      try {
-        window.history.pushState({ naeApp: true }, '');
-      } catch (e) {}
+      try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
       setCurrentTab(newTab);
       setActiveSubView('none');
     }
   };
 
-  // 1. Hardware / Browser Back button handling & Exit Confirmation
   useEffect(() => {
-    try {
-      window.history.replaceState({ naeApp: true }, '');
-      window.history.pushState({ naeApp: true }, '');
-    } catch (e) {}
+    try { window.history.replaceState({ naeApp: true }, ''); window.history.pushState({ naeApp: true }, ''); } catch (e) {}
 
     const onPopState = () => {
-      // A. If Exit Confirmation is open, close it on back
-      if (isExitModalOpenRef.current) {
-        setIsExitModalOpen(false);
-        try {
-          window.history.pushState({ naeApp: true }, '');
-        } catch (e) {}
-        return;
-      }
-
-      // B. If any modal is open, close modal
-      if (isProductModalOpenRef.current) {
-        setIsProductModalOpen(false);
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
-      }
-      if (isImportExportOpenRef.current) {
-        setIsImportExportOpen(false);
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
-      }
-      if (isQuotationOpenRef.current) {
-        setIsQuotationOpen(false);
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
-      }
-      if (isPinModalOpenRef.current) {
-        setIsPinModalOpen(false);
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
-      }
-      if (isHelpOpenRef.current) {
-        setIsHelpOpen(false);
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
-      }
+      if (isExitModalOpenRef.current) { setIsExitModalOpen(false); try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return; }
+      if (isProductModalOpenRef.current) { setIsProductModalOpen(false); try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return; }
+      if (isImportExportOpenRef.current) { setIsImportExportOpen(false); try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return; }
+      if (isQuotationOpenRef.current) { setIsQuotationOpen(false); try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return; }
+      if (isPinModalOpenRef.current) { setIsPinModalOpen(false); try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return; }
+      if (isHelpOpenRef.current) { setIsHelpOpen(false); try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return; }
       if (approvalModalDataRef.current.isOpen) {
         setApprovalModalData((prev) => ({ ...prev, isOpen: false }));
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return;
       }
-
-      // C. If active sub-view is open (like distributor approvals, reports, etc.), go back to previous tab
       if (activeSubViewRef.current !== 'none') {
         setActiveSubView('none');
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return;
       }
-
-      // D. If not on Home screen, go back to previous screen or directly to Home
       if (currentTabRef.current !== 'home') {
         if (historyStackRef.current.length > 1) {
           historyStackRef.current.pop();
           const prev = historyStackRef.current[historyStackRef.current.length - 1];
-          if (prev) {
-            setCurrentTab(prev.tab);
-            setActiveSubView(prev.subView || 'none');
-          } else {
-            setCurrentTab('home');
-            setActiveSubView('none');
-          }
-        } else {
-          setCurrentTab('home');
-          setActiveSubView('none');
-        }
-        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
-        return;
+          if (prev) { setCurrentTab(prev.tab); setActiveSubView(prev.subView || 'none'); } 
+          else { setCurrentTab('home'); setActiveSubView('none'); }
+        } else { setCurrentTab('home'); setActiveSubView('none'); }
+        try { window.history.pushState({ naeApp: true }, ''); } catch (e) {} return;
       }
-
-      // E. On Home screen with no modals: Show Exit Confirmation Warning
       setIsExitModalOpen(true);
       try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
     };
@@ -229,64 +138,50 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // 2. Prevent pull-to-refresh on mobile devices when swiping down from the top
   useEffect(() => {
     let touchStartY = 0;
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-      }
-    };
-
+    const onTouchStart = (e: TouchEvent) => { if (e.touches.length === 1) { touchStartY = e.touches[0].clientY; } };
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 1) {
         const touchCurrentY = e.touches[0].clientY;
-        const currentScrollTop =
-          window.scrollY ||
-          document.documentElement.scrollTop ||
-          document.body.scrollTop ||
-          0;
-        // If scrolled to top and pulling downward, cancel pull-to-refresh
+        const currentScrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
         if (currentScrollTop <= 0 && touchCurrentY > touchStartY) {
-          if (e.cancelable) {
-            e.preventDefault();
-          }
+          if (e.cancelable) { e.preventDefault(); }
         }
       }
     };
-
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
-    };
+    return () => { window.removeEventListener('touchstart', onTouchStart); window.removeEventListener('touchmove', onTouchMove); };
   }, []);
 
-  // Persist language and role changes
-  useEffect(() => {
-    localStorage.setItem('nae_language_choice_v1', language);
-  }, [language]);
+  useEffect(() => { localStorage.setItem('nae_language_choice_v1', language); }, [language]);
+  useEffect(() => { localStorage.setItem('nae_current_role_v1', userRole); }, [userRole]);
 
+  // ফায়ারবেস থেকে লাইভ রিকোয়েস্ট সিঙ্ক
   useEffect(() => {
-    localStorage.setItem('nae_current_role_v1', userRole);
+    if (userRole === 'owner') {
+      const reqRef = ref(db, 'requests/');
+      const unsubscribe = onValue(reqRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const requestsArray = Object.values(data) as WholesaleRequest[];
+          setWholesaleRequests(requestsArray);
+        }
+      });
+      return () => unsubscribe();
+    }
   }, [userRole]);
 
-  // Wholesale section access approval flow (Owner approval instead of passwords)
   const [isWholesaleApproved, setIsWholesaleApproved] = useState(() => loadWholesaleApproval());
   const [isWholesaleHidden, setIsWholesaleHidden] = useState<boolean>(() => loadWholesaleHidden());
   const [hasWholesaleRequest, setHasWholesaleRequest] = useState(() => {
     return loadWholesaleRequests().some((r) => r.status === 'pending');
   });
 
-  // Visible tabs based on user role and wholesale visibility
   const visibleTabs: ViewTab[] = useMemo(() => {
-    if (userRole === 'owner') {
-      return ['home', 'wholesale', 'retail', 'products', 'owner-desk'];
-    }
-    return isWholesaleHidden
-      ? ['home', 'retail']
-      : ['home', 'wholesale', 'retail'];
+    if (userRole === 'owner') return ['home', 'wholesale', 'retail', 'products', 'owner-desk'];
+    return isWholesaleHidden ? ['home', 'retail'] : ['home', 'wholesale', 'retail'];
   }, [userRole, isWholesaleHidden]);
 
   const currentTabIdx = useMemo(() => {
@@ -294,17 +189,12 @@ export default function App() {
     return idx >= 0 ? idx : 0;
   }, [visibleTabs, currentTab]);
 
-  // Capture beforeinstallprompt for native PWA WebAPK install
   useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      (window as any).deferredPrompt = e;
-    };
+    const handler = (e: Event) => { e.preventDefault(); (window as any).deferredPrompt = e; };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  // Check URL parameters on mount (WhatsApp approval link or unlock link)
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -316,36 +206,21 @@ export default function App() {
 
       if (action === 'approve_wholesale') {
         if (reqPhone && reqName) {
-          addWholesaleRequest({
-            customerName: reqName,
-            customerPhone: reqPhone,
-          });
+          addWholesaleRequest({ customerName: reqName, customerPhone: reqPhone });
           setWholesaleRequests(loadWholesaleRequests());
         }
-        setApprovalModalData({
-          isOpen: true,
-          customerName: reqName,
-          customerPhone: reqPhone,
-          requestId: reqId,
-        });
+        setApprovalModalData({ isOpen: true, customerName: reqName, customerPhone: reqPhone, requestId: reqId });
       } else if (wholesaleParam === 'open') {
-        if (reqPhone) {
-          saveCurrentCustomerPhone(reqPhone);
-        }
-        if (reqName) {
-          saveCurrentCustomerName(reqName);
-        }
+        if (reqPhone) saveCurrentCustomerPhone(reqPhone);
+        if (reqName) saveCurrentCustomerName(reqName);
         setIsWholesaleApproved(true);
         saveWholesaleApproval(true);
         setCurrentTab('wholesale');
         showToast('Wholesale rates unlocked.');
       }
-    } catch (e) {
-      console.error('URL parse error:', e);
-    }
+    } catch (e) { console.error('URL parse error:', e); }
   }, []);
 
-  // Swipe gesture navigation: real-time finger-following drag system
   const swipeContainerRef = useRef<HTMLDivElement | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -355,15 +230,12 @@ export default function App() {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     const target = e.target as HTMLElement;
-    // Don't intercept swipe when user is typing, scrolling an input, or inside a modal
     if (target.closest('input, textarea, select, [data-no-swipe]')) return;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     isDraggingRef.current = true;
     isHorizontalGesture.current = null;
-    if (swipeContainerRef.current) {
-      swipeContainerRef.current.style.transition = 'none'; // Real-time finger follow
-    }
+    if (swipeContainerRef.current) { swipeContainerRef.current.style.transition = 'none'; }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -373,26 +245,20 @@ export default function App() {
     const diffX = currentX - touchStartX.current;
     const diffY = currentY - touchStartY.current;
 
-    // Detect direction lock on first significant movement
     if (isHorizontalGesture.current === null) {
-      if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
-        isHorizontalGesture.current = Math.abs(diffX) > Math.abs(diffY);
-      }
+      if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) { isHorizontalGesture.current = Math.abs(diffX) > Math.abs(diffY); }
     }
 
-    // If vertical scrolling, keep native vertical scroll free
     if (isHorizontalGesture.current === false) return;
 
     if (isHorizontalGesture.current === true && swipeContainerRef.current) {
       const pageWidth = window.innerWidth;
       let moveX = -(currentTabIdx * pageWidth) + diffX;
-
-      // Clamp boundary overshoot
       if (moveX > 0) moveX = 0;
       const maxMove = -((visibleTabs.length - 1) * pageWidth);
       if (moveX < maxMove) moveX = maxMove;
-
-      swipeContainerRef.current.style.transform = `translateX(${moveX}px)`;
+      // ১২০fps স্মুথ স্লাইড 
+      swipeContainerRef.current.style.transform = `translate3d(${moveX}px, 0, 0)`;
     }
   };
 
@@ -402,11 +268,8 @@ export default function App() {
       return;
     }
     isDraggingRef.current = false;
-
-    if (swipeContainerRef.current) {
-      swipeContainerRef.current.style.transition = 'transform 0.25s ease-out';
-    }
-
+    if (swipeContainerRef.current) { swipeContainerRef.current.style.transition = 'transform 0.25s ease-out'; }
+    
     const endX = e.changedTouches[0].clientX;
     const diff = endX - touchStartX.current;
     const isHorizontal = isHorizontalGesture.current;
@@ -419,160 +282,122 @@ export default function App() {
 
     if (isHorizontal) {
       if (diff < -60 && currentTabIdx < visibleTabs.length - 1) {
-        // Swiped Left (finger moves right to left) -> Next tab
         handleTabChange(visibleTabs[currentTabIdx + 1]);
         return;
       } else if (diff > 60 && currentTabIdx > 0) {
-        // Swiped Right (finger moves left to right) -> Previous tab
         handleTabChange(visibleTabs[currentTabIdx - 1]);
         return;
       }
     }
-
-    // Snap back to current tab
+    // ১২০fps স্মুথ স্লাইড
     if (swipeContainerRef.current) {
-      swipeContainerRef.current.style.transform = `translateX(-${(currentTabIdx / visibleTabs.length) * 100}%)`;
+      swipeContainerRef.current.style.transform = `translate3d(-${(currentTabIdx / visibleTabs.length) * 100}%, 0, 0)`;
     }
   };
 
-  // Sync container position when currentTab or visibleTabs change
   useEffect(() => {
     if (swipeContainerRef.current) {
       swipeContainerRef.current.style.transition = 'transform 0.25s ease-out';
-      swipeContainerRef.current.style.transform = `translateX(-${(currentTabIdx / visibleTabs.length) * 100}%)`;
+      swipeContainerRef.current.style.transform = `translate3d(-${(currentTabIdx / visibleTabs.length) * 100}%, 0, 0)`;
     }
   }, [currentTabIdx, visibleTabs.length]);
 
-  // Handle switching roles
+  // ব্যাক বাটন এক্সিট কন্ট্রোল
+  const handleConfirmExit = () => {
+    window.close(); 
+    setTimeout(() => { window.history.go(-3); }, 100);
+  };
+  
+  const handleCancelExit = () => {
+    setIsExitModalOpen(false);
+    try { window.history.pushState({ naeApp: true }, ''); } catch (e) {}
+  };
+
   const handleToggleRole = () => {
-    if (userRole === 'owner') {
-      setUserRole('customer');
-      handleTabChange('home');
-      showToast('Switched to Guest View.');
-    } else {
-      setIsPinModalOpen(true);
-    }
+    if (userRole === 'owner') { setUserRole('customer'); handleTabChange('home'); showToast('Switched to Guest View.'); } 
+    else { setIsPinModalOpen(true); }
   };
 
   const handlePinSuccess = () => {
-    setUserRole('owner');
-    setIsPinModalOpen(false);
-    handleTabChange('home');
-    showToast('Unlocked Owner Mode.');
+    setUserRole('owner'); setIsPinModalOpen(false); handleTabChange('home'); showToast('Unlocked Owner Mode.');
   };
 
+  // ফায়ারবেস রিকোয়েস্ট একসেপ্ট 
   const handleApproveWholesale = () => {
-    setIsWholesaleApproved(true);
-    saveWholesaleApproval(true);
-    setHasWholesaleRequest(false);
-    setWholesaleRequests(loadWholesaleRequests());
-    showToast('Wholesale access approved!');
+    const phone = approvalModalData.customerPhone;
+    if (phone) {
+      update(ref(db, 'requests/' + phone), { status: 'approved' });
+    }
+    setIsWholesaleApproved(true); saveWholesaleApproval(true); setHasWholesaleRequest(false);
+    showToast('হোলসেল রিকোয়েস্ট একসেপ্ট করা হয়েছে!');
   };
 
   const handleRevokeWholesale = () => {
-    setIsWholesaleApproved(false);
-    saveWholesaleApproval(false);
-    showToast('Wholesale access hidden.');
+    setIsWholesaleApproved(false); saveWholesaleApproval(false); showToast('Wholesale access hidden.');
   };
 
   const handleToggleWholesaleHidden = () => {
     const nextVal = !isWholesaleHidden;
-    setIsWholesaleHidden(nextVal);
-    saveWholesaleHidden(nextVal);
-    showToast(
-      nextVal
-        ? 'Wholesale hidden from Dashboard (invisible to visitors).'
-        : 'Wholesale is now visible on Dashboard.'
-    );
+    setIsWholesaleHidden(nextVal); saveWholesaleHidden(nextVal);
+    showToast(nextVal ? 'Wholesale hidden from Dashboard.' : 'Wholesale is now visible on Dashboard.');
   };
 
+  // ফায়ারবেস রিকোয়েস্ট সেন্ড
   const handleRequestWholesale = () => {
-    setHasWholesaleRequest(true);
-    setWholesaleRequests(loadWholesaleRequests());
-    showToast('Wholesale access request sent.');
-  };
-
-
-  // Add / Edit Product
-  const handleSaveProduct = (
-    productData: Omit<Product, 'id' | 'lastUpdated'>,
-    andAddAnother: boolean = false
-  ) => {
-    if (editingProduct) {
-      // Update existing
-      const updatedList = products.map((p) =>
-        p.id === editingProduct.id
-          ? {
-              ...p,
-              ...productData,
-              lastUpdated: new Date().toISOString(),
-            }
-          : p
-      );
-      setProducts(updatedList);
-      saveProducts(updatedList);
-      showToast('Product updated successfully!');
-      setEditingProduct(null);
-      setIsProductModalOpen(false);
+    const customerPhone = prompt("আপনার মোবাইল নম্বর দিন (যেমন: 9563340244):");
+    const customerName = prompt("আপনার নাম দিন:");
+    
+    if (customerPhone && customerName) {
+      set(ref(db, 'requests/' + customerPhone), {
+        customerName: customerName,
+        customerPhone: customerPhone,
+        status: 'pending',
+        time: new Date().toISOString()
+      });
+      setHasWholesaleRequest(true);
+      showToast('রিকোয়েস্ট পাঠানো হয়েছে। অনুমোদনের অপেক্ষা করুন।');
     } else {
-      // Add new
-      const newProduct: Product = {
-        ...productData,
-        id: 'prod_' + Math.random().toString(36).substr(2, 9),
-        lastUpdated: new Date().toISOString(),
-      };
-      const updatedList = [newProduct, ...products];
-      setProducts(updatedList);
-      saveProducts(updatedList);
-      showToast('New product added to inventory!');
-
-      if (!andAddAnother) {
-        setIsProductModalOpen(false);
-      }
+      showToast('নাম এবং মোবাইল নম্বর দেওয়া বাধ্যতামূলক!');
     }
   };
 
-  // Duplicate Product
-  const handleDuplicateProduct = (product: Product) => {
-    const duplicated: Product = {
-      ...product,
-      id: 'prod_' + Math.random().toString(36).substr(2, 9),
-      name: `${product.name} (Copy)`,
-      code: `${product.code}-COPY`,
-      lastUpdated: new Date().toISOString(),
-    };
-    const updatedList = [duplicated, ...products];
-    setProducts(updatedList);
-    saveProducts(updatedList);
-    showToast(`Duplicated ${product.name}`);
+  const handleSaveProduct = (productData: Omit<Product, 'id' | 'lastUpdated'>, andAddAnother: boolean = false) => {
+    if (editingProduct) {
+      const updatedList = products.map((p) => p.id === editingProduct.id ? { ...p, ...productData, lastUpdated: new Date().toISOString(), } : p );
+      setProducts(updatedList); saveProducts(updatedList); showToast('Product updated successfully!'); setEditingProduct(null); setIsProductModalOpen(false);
+    } else {
+      const newProduct: Product = { ...productData, id: 'prod_' + Math.random().toString(36).substr(2, 9), lastUpdated: new Date().toISOString(), };
+      const updatedList = [newProduct, ...products];
+      setProducts(updatedList); saveProducts(updatedList); showToast('New product added to inventory!');
+      if (!andAddAnother) { setIsProductModalOpen(false); }
+    }
   };
 
-  // Delete Product
+  const handleDuplicateProduct = (product: Product) => {
+    const duplicated: Product = { ...product, id: 'prod_' + Math.random().toString(36).substr(2, 9), name: `${product.name} (Copy)`, code: `${product.code}-COPY`, lastUpdated: new Date().toISOString(), };
+    const updatedList = [duplicated, ...products];
+    setProducts(updatedList); saveProducts(updatedList); showToast(`Duplicated ${product.name}`);
+  };
+
   const handleDeleteProduct = (productId: string) => {
     const updatedList = products.filter((p) => p.id !== productId);
-    setProducts(updatedList);
-    saveProducts(updatedList);
-    showToast('Product removed.');
+    setProducts(updatedList); saveProducts(updatedList); showToast('Product removed.');
   };
 
-  // Toggle Active/Inactive (Live in Wholesale & Retail or Hidden)
   const handleToggleActive = (productId: string) => {
     const target = products.find((p) => p.id === productId);
     const willBeActive = target ? !target.isActive : true;
-    const updatedList = products.map((p) =>
-      p.id === productId ? { ...p, isActive: !p.isActive } : p
-    );
-    setProducts(updatedList);
-    saveProducts(updatedList);
-    showToast(
-      willBeActive
-        ? '✓ In Stock: Now Live in Wholesale & Retail.'
-        : '✕ Out of Stock: Hidden from Wholesale & Retail.'
-    );
+    const updatedList = products.map((p) => p.id === productId ? { ...p, isActive: !p.isActive } : p );
+    setProducts(updatedList); saveProducts(updatedList);
+    showToast(willBeActive ? '✓ In Stock: Now Live in Wholesale & Retail.' : '✕ Out of Stock: Hidden from Wholesale & Retail.');
   };
 
-  // Inline Price Updates from Retail View
-  const handleUpdateProductPrices = (
+  // Exit Modal এর ভেতরে কাজ করার জন্য গ্লোবাল ফাংশন
+  (window as any).handleConfirmExit = handleConfirmExit;
+  (window as any).handleCancelExit = handleCancelExit;
+
+  const handleUpdateProductPrices = (productId: string, purchasePrice: number, retailPrice: number) => {
+    const { profitAmount, profitCostPct, profitMarginPct } = calculateProfit( = (
     productId: string,
     purchasePrice: number,
     retailPrice: number
