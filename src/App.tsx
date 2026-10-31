@@ -397,11 +397,6 @@ export default function App() {
   (window as any).handleCancelExit = handleCancelExit;
 
   const handleUpdateProductPrices = (productId: string, purchasePrice: number, retailPrice: number) => {
-    const { profitAmount, profitCostPct, profitMarginPct } = calculateProfit( = (
-    productId: string,
-    purchasePrice: number,
-    retailPrice: number
-  ) => {
     const { profitAmount, profitCostPct, profitMarginPct } = calculateProfit(
       purchasePrice,
       retailPrice
